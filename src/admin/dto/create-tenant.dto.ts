@@ -3,7 +3,7 @@ import { BusinessType } from '../../common/enums/business-type.enum';
 import { Plan } from '../../common/enums/plan.enum';
 
 export class CreateTenantDto {
-  // Datos del comercio
+  // Business data
   @IsString()
   @IsNotEmpty()
   businessName: string;
@@ -20,7 +20,7 @@ export class CreateTenantDto {
   @IsOptional()
   plan?: Plan;
 
-  // Datos del usuario dueño del comercio
+  // Owner user data
   @IsString()
   @IsNotEmpty()
   ownerName: string;

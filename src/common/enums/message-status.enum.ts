@@ -1,7 +1,7 @@
 export enum MessageStatus {
-  Pending = 'pending', // recibido, sin abrir
-  Read = 'read', // leído, sin acción
-  Replied = 'replied', // respondido
-  Snoozed = 'snoozed', // pospuesto
-  Dismissed = 'dismissed', // descartado
+  Pending = 'pending', // received, not opened
+  Read = 'read', // read, no action taken
+  Replied = 'replied', // replied to
+  Snoozed = 'snoozed', // snoozed for later
+  Dismissed = 'dismissed', // discarded
 }

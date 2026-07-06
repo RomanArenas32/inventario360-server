@@ -29,4 +29,8 @@ export class UsersService {
   findById(id: string): Promise<User | null> {
     return this.usersRepository.findOne({ where: { id }, relations: { tenant: true } });
   }
+
+  deleteByTenantId(tenantId: string): Promise<void> {
+    return this.usersRepository.delete({ tenantId }).then(() => undefined);
+  }
 }

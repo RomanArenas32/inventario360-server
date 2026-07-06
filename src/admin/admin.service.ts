@@ -48,6 +48,7 @@ export class AdminService {
   async deleteTenant(id: string) {
     const tenant = await this.tenantsService.findById(id);
     if (!tenant) throw new NotFoundException('Tenant no encontrado');
+    await this.usersService.deleteByTenantId(id);
     return this.tenantsService.remove(id);
   }
 }

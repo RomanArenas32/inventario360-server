@@ -37,7 +37,7 @@ async function createAdmin() {
     return;
   }
 
-  // El admin necesita un tenant propio (la plataforma)
+  // The admin requires its own tenant (the platform itself)
   const tenant = tenantRepo.create({
     name: 'Inventario360',
     businessType: BusinessType.Almacen,

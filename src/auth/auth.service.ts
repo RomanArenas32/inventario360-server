@@ -17,7 +17,7 @@ export class AuthService {
 
   // async register(dto: RegisterDto) {
   //   const existing = await this.usersService.findByEmail(dto.email);
-  //   if (existing) throw new ConflictException('El email ya está registrado');
+  //   if (existing) throw new ConflictException('Email already registered');
 
   //   const tenant = await this.tenantsService.create(dto.businessName, dto.businessType);
 
