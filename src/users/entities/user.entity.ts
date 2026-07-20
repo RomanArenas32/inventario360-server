@@ -1,6 +1,6 @@
-import { Column, CreateDateColumn, Entity, ManyToOne, PrimaryGeneratedColumn } from 'typeorm';
+import { Column, CreateDateColumn, Entity, OneToMany, PrimaryGeneratedColumn } from 'typeorm';
 import { Role } from '../../common/enums/role.enum';
-import { Tenant } from '../../tenants/entities/tenant.entity';
+import { TenantMembership } from '../../tenant-memberships/entities/tenant-membership.entity';
 
 @Entity('users')
 export class User {
@@ -16,17 +16,14 @@ export class User {
   @Column()
   password: string;
 
-  @Column({ type: 'enum', enum: Role, default: Role.Tenant })
-  role: Role;
+  @Column({ type: 'enum', enum: Role, default: Role.User })
+  globalRole: Role;
 
   @Column({ default: true })
   isActive: boolean;
 
-  @ManyToOne(() => Tenant, (tenant) => tenant.users)
-  tenant: Tenant;
-
-  @Column()
-  tenantId: string;
+  @OneToMany(() => TenantMembership, (m) => m.user)
+  memberships: TenantMembership[];
 
   @CreateDateColumn()
   createdAt: Date;

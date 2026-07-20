@@ -1,4 +1,4 @@
 export enum Role {
   Admin = 'admin', // platform owner
-  Tenant = 'tenant', // subscribed business
+  User = 'user', // any subscribed user (owner or staff)
 }

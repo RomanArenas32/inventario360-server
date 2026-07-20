@@ -10,7 +10,9 @@ import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
 import { CategoriesModule } from './categories/categories.module';
 import { CommonModule } from './common/common.module';
 import { RolesGuard } from './common/guards/roles.guard';
+import { PlatformAdminModule } from './platform-admin/platform-admin.module';
 import { ProductsModule } from './products/products.module';
+import { TenantMembershipsModule } from './tenant-memberships/tenant-memberships.module';
 import { TenantsModule } from './tenants/tenants.module';
 import { UsersModule } from './users/users.module';
 
@@ -19,7 +21,6 @@ import { UsersModule } from './users/users.module';
     ConfigModule.forRoot({ isGlobal: true }),
     ThrottlerModule.forRoot([
       { name: 'global', ttl: 60_000, limit: 60 }, // 60 req/min globally
-      { name: 'login', ttl: 60_000, limit: 5 }, // 5 attempts/min on login
     ]),
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
@@ -40,7 +41,9 @@ import { UsersModule } from './users/users.module';
     MessagesModule,
     CategoriesModule,
     CommonModule,
+    PlatformAdminModule,
     ProductsModule,
+    TenantMembershipsModule,
     UsersModule,
     TenantsModule,
   ],

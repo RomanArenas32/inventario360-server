@@ -2,10 +2,7 @@
 import * as bcrypt from 'bcrypt';
 import * as dotenv from 'dotenv';
 import { DataSource } from 'typeorm';
-import { BusinessType } from '../common/enums/business-type.enum';
-import { Role } from '../common/enums/role.enum';
-import { Tenant } from '../tenants/entities/tenant.entity';
-import { User } from '../users/entities/user.entity';
+import { PlatformAdmin } from '../platform-admin/entities/platform-admin.entity';
 
 dotenv.config();
 
@@ -16,8 +13,8 @@ const dataSource = new DataSource({
   username: process.env.DB_USERNAME,
   password: process.env.DB_PASSWORD,
   database: process.env.DB_NAME,
-  entities: [User, Tenant],
-  synchronize: false,
+  entities: [PlatformAdmin],
+  synchronize: true,
 });
 
 async function createAdmin() {
@@ -27,35 +24,20 @@ async function createAdmin() {
   const password = process.env.ADMIN_PASSWORD ?? 'admin123';
   const name = process.env.ADMIN_NAME ?? 'Administrador';
 
-  const userRepo = dataSource.getRepository(User);
-  const tenantRepo = dataSource.getRepository(Tenant);
+  const repo = dataSource.getRepository(PlatformAdmin);
 
-  const exists = await userRepo.findOne({ where: { email } });
+  const exists = await repo.findOne({ where: { email } });
   if (exists) {
-    console.log(`El usuario admin ya existe: ${email}`);
+    console.log(`El admin de plataforma ya existe: ${email}`);
     await dataSource.destroy();
     return;
   }
 
-  // The admin requires its own tenant (the platform itself)
-  const tenant = tenantRepo.create({
-    name: 'Inventario360',
-    businessType: BusinessType.Almacen,
-    isActive: true,
-  });
-  await tenantRepo.save(tenant);
-
   const hashedPassword = await bcrypt.hash(password, 10);
-  const admin = userRepo.create({
-    name,
-    email,
-    password: hashedPassword,
-    role: Role.Admin,
-    tenantId: tenant.id,
-  });
-  await userRepo.save(admin);
+  const admin = repo.create({ name, email, password: hashedPassword });
+  await repo.save(admin);
 
-  console.log('✓ Usuario admin creado correctamente');
+  console.log('✓ Admin de plataforma creado correctamente');
   console.log(`  Email:    ${email}`);
   console.log(`  Password: ${password}`);
   console.log('  Cambiá la contraseña en producción.');

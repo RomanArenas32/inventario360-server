@@ -1,7 +1,7 @@
 import { Column, CreateDateColumn, Entity, OneToMany, PrimaryGeneratedColumn } from 'typeorm';
 import { BusinessType } from '../../common/enums/business-type.enum';
 import { Plan } from '../../common/enums/plan.enum';
-import { User } from '../../users/entities/user.entity';
+import { TenantMembership } from '../../tenant-memberships/entities/tenant-membership.entity';
 
 @Entity('tenants')
 export class Tenant {
@@ -26,8 +26,8 @@ export class Tenant {
   @Column({ default: true })
   isActive: boolean;
 
-  @OneToMany(() => User, (user) => user.tenant)
-  users: User[];
+  @OneToMany(() => TenantMembership, (m) => m.tenant)
+  memberships: TenantMembership[];
 
   @CreateDateColumn()
   createdAt: Date;

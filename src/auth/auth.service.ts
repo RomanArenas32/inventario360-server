@@ -1,37 +1,17 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { ForbiddenException, Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
-// import { Role } from '../common/enums/role.enum';
-// import { TenantsService } from '../tenants/tenants.service';
+import { TenantMembershipsService } from '../tenant-memberships/tenant-memberships.service';
 import { UsersService } from '../users/users.service';
 import { LoginDto } from './dto/login.dto';
-// import { RegisterDto } from './dto/register.dto';
 
 @Injectable()
 export class AuthService {
   constructor(
     private readonly usersService: UsersService,
-    // private readonly tenantsService: TenantsService,
+    private readonly tenantMembershipsService: TenantMembershipsService,
     private readonly jwtService: JwtService,
   ) {}
-
-  // async register(dto: RegisterDto) {
-  //   const existing = await this.usersService.findByEmail(dto.email);
-  //   if (existing) throw new ConflictException('Email already registered');
-
-  //   const tenant = await this.tenantsService.create(dto.businessName, dto.businessType);
-
-  //   const hashedPassword = await bcrypt.hash(dto.password, 10);
-  //   const user = await this.usersService.create({
-  //     name: dto.name,
-  //     email: dto.email,
-  //     password: hashedPassword,
-  //     role: Role.Tenant,
-  //     tenantId: tenant.id,
-  //   });
-
-  //   return this.buildResponse(user.id, user.email, tenant.id, user.role);
-  // }
 
   async login(dto: LoginDto) {
     const user = await this.usersService.findByEmail(dto.email);
@@ -39,10 +19,45 @@ export class AuthService {
     const passwordMatch = await bcrypt.compare(dto.password, user.password);
     if (!passwordMatch) throw new UnauthorizedException('Credenciales inválidas');
     if (!user.isActive) throw new UnauthorizedException('Usuario inactivo');
-    return this.buildResponse(user.id, user.email, user.tenantId, user.role);
+
+    const memberships = await this.tenantMembershipsService.findByUserId(user.id);
+
+    // Auto-select tenant if the user belongs to exactly one
+    let activeTenantId: string | null = null;
+    let tenantRole: string | null = null;
+    if (memberships.length === 1) {
+      activeTenantId = memberships[0].tenantId;
+      tenantRole = memberships[0].role;
+    }
+
+    const token = this.jwtService.sign({
+      sub: user.id,
+      email: user.email,
+      globalRole: user.globalRole,
+      activeTenantId,
+      tenantRole,
+    });
+
+    return { access_token: token, memberships };
   }
-  private buildResponse(userId: string, email: string, tenantId: string, role: string) {
-    const token = this.jwtService.sign({ sub: userId, email, tenantId, role });
+
+  async switchTenant(userId: string, tenantId: string) {
+    const membership = await this.tenantMembershipsService.findMembership(userId, tenantId);
+    if (!membership || !membership.isActive) {
+      throw new ForbiddenException('No sos miembro de este negocio');
+    }
+
+    const user = await this.usersService.findById(userId);
+    if (!user) throw new UnauthorizedException();
+
+    const token = this.jwtService.sign({
+      sub: user.id,
+      email: user.email,
+      globalRole: user.globalRole,
+      activeTenantId: tenantId,
+      tenantRole: membership.role,
+    });
+
     return { access_token: token };
   }
 }
