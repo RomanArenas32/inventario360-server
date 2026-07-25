@@ -13,8 +13,8 @@ export class User {
   @Column({ unique: true })
   email: string;
 
-  @Column()
-  password: string;
+  @Column({ type: 'varchar', nullable: true })
+  password: string | null;
 
   @Column({ type: 'enum', enum: Role, default: Role.User })
   globalRole: Role;

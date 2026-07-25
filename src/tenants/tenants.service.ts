@@ -1,11 +1,11 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Inject, Injectable, NotFoundException, forwardRef } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import * as bcrypt from 'bcrypt';
 import { Repository } from 'typeorm';
 import { BusinessType } from '../common/enums/business-type.enum';
 import { Plan } from '../common/enums/plan.enum';
-import { Role } from '../common/enums/role.enum';
 import { TenantRole } from '../common/enums/tenant-role.enum';
+import { InvitationsService } from '../invitations/invitations.service';
+import { MailService } from '../mail/mail.service';
 import { TenantMembershipsService } from '../tenant-memberships/tenant-memberships.service';
 import { UsersService } from '../users/users.service';
 import { AddMemberDto } from './dto/add-member.dto';
@@ -23,6 +23,9 @@ export class TenantsService {
     private readonly tenantsRepository: Repository<Tenant>,
     private readonly usersService: UsersService,
     private readonly membershipsService: TenantMembershipsService,
+    @Inject(forwardRef(() => InvitationsService))
+    private readonly invitationsService: InvitationsService,
+    private readonly mailService: MailService,
   ) {}
 
   create(name: string, businessType?: BusinessType, options: TenantOptions = {}): Promise<Tenant> {
@@ -81,25 +84,11 @@ export class TenantsService {
   }
 
   async addMember(tenantId: string, dto: AddMemberDto) {
-    let user = await this.usersService.findByEmail(dto.email);
-    if (!user) {
-      const hashedPassword = await bcrypt.hash(dto.password, 10);
-      user = await this.usersService.create({
-        name: dto.name,
-        email: dto.email,
-        password: hashedPassword,
-        globalRole: Role.User,
-      });
-    }
-
-    const membership = await this.membershipsService.create({
-      userId: user.id,
-      tenantId,
-      role: dto.role ?? TenantRole.Staff,
-    });
-
-    const { password: _p, ...safeUser } = user;
-    return { ...membership, user: safeUser };
+    const tenant = await this.tenantsRepository.findOneOrFail({ where: { id: tenantId } });
+    const role = dto.role ?? TenantRole.Staff;
+    const invitation = await this.invitationsService.create(dto.email, tenantId, role);
+    await this.mailService.sendTenantInvitation(dto.email, tenant.name, invitation.token);
+    return { ok: true, invitationSent: true };
   }
 
   async updateMemberRole(tenantId: string, userId: string, role: TenantRole) {

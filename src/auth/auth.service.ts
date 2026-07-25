@@ -16,6 +16,7 @@ export class AuthService {
   async login(dto: LoginDto) {
     const user = await this.usersService.findByEmail(dto.email);
     if (!user) throw new UnauthorizedException('Credenciales inválidas');
+    if (!user.password) throw new UnauthorizedException('Credenciales inválidas');
     const passwordMatch = await bcrypt.compare(dto.password, user.password);
     if (!passwordMatch) throw new UnauthorizedException('Credenciales inválidas');
     if (!user.isActive) throw new UnauthorizedException('Usuario inactivo');
@@ -39,6 +40,31 @@ export class AuthService {
     });
 
     return { access_token: token, memberships };
+  }
+
+  async loginByEmail(email: string) {
+    const user = await this.usersService.findByEmail(email);
+    if (!user) throw new UnauthorizedException('No existe una cuenta con este email');
+    if (!user.isActive) throw new UnauthorizedException('Usuario inactivo');
+
+    const memberships = await this.tenantMembershipsService.findByUserId(user.id);
+
+    let activeTenantId: string | null = null;
+    let tenantRole: string | null = null;
+    if (memberships.length === 1) {
+      activeTenantId = memberships[0].tenantId;
+      tenantRole = memberships[0].role;
+    }
+
+    const token = this.jwtService.sign({
+      sub: user.id,
+      email: user.email,
+      globalRole: user.globalRole,
+      activeTenantId,
+      tenantRole,
+    });
+
+    return { access_token: token, memberships, activeTenantId };
   }
 
   async switchTenant(userId: string, tenantId: string) {

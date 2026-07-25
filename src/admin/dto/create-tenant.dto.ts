@@ -1,4 +1,4 @@
-import { IsEmail, IsEnum, IsNotEmpty, IsOptional, IsString, MinLength } from 'class-validator';
+import { IsEmail, IsEnum, IsNotEmpty, IsOptional, IsString } from 'class-validator';
 import { BusinessType } from '../../common/enums/business-type.enum';
 import { Plan } from '../../common/enums/plan.enum';
 
@@ -20,15 +20,7 @@ export class CreateTenantDto {
   @IsOptional()
   plan?: Plan;
 
-  // Owner user data
-  @IsString()
-  @IsNotEmpty()
-  ownerName: string;
-
+  // Owner contact (invitation will be sent)
   @IsEmail()
   ownerEmail: string;
-
-  @IsString()
-  @MinLength(6)
-  ownerPassword: string;
 }

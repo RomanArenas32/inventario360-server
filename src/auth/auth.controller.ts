@@ -1,4 +1,5 @@
-import { Body, Controller, Get, Post, Res } from '@nestjs/common';
+import { Body, Controller, Get, Post, Query, Res } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { Throttle } from '@nestjs/throttler';
 import type { Response } from 'express';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
@@ -18,6 +19,7 @@ export class AuthController {
     private readonly authService: AuthService,
     private readonly tenantsService: TenantsService,
     private readonly tenantMembershipsService: TenantMembershipsService,
+    private readonly config: ConfigService,
   ) {}
 
   @Public()
@@ -79,5 +81,89 @@ export class AuthController {
         role: m.role,
       })),
     };
+  }
+
+  // ── Google OAuth ───────────────────────────────────────────────────────────
+
+  @Public()
+  @Get('google')
+  googleStart(@Res() res: Response) {
+    const params = new URLSearchParams({
+      client_id: this.config.getOrThrow<string>('GOOGLE_CLIENT_ID'),
+      redirect_uri: `${this.config.getOrThrow<string>('API_URL')}/auth/google/callback`,
+      response_type: 'code',
+      scope: 'openid email profile',
+      access_type: 'online',
+    });
+    res.redirect(`https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`);
+  }
+
+  @Public()
+  @Get('google/callback')
+  async googleCallback(@Query('code') code: string, @Res() res: Response) {
+    const frontendUrl = this.config.getOrThrow<string>('FRONTEND_URL');
+    const errorRedirect = (msg: string) => res.redirect(`${frontendUrl}/login?error=${msg}`);
+
+    try {
+      // Exchange authorization code for access token
+      const tokenRes = await fetch('https://oauth2.googleapis.com/token', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams({
+          code,
+          client_id: this.config.getOrThrow<string>('GOOGLE_CLIENT_ID'),
+          client_secret: this.config.getOrThrow<string>('GOOGLE_CLIENT_SECRET'),
+          redirect_uri: `${this.config.getOrThrow<string>('API_URL')}/auth/google/callback`,
+          grant_type: 'authorization_code',
+        }).toString(),
+      });
+
+      const { access_token } = (await tokenRes.json()) as { access_token: string };
+      if (!access_token) return errorRedirect('google_failed');
+
+      // Get user profile
+      const profileRes = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+        headers: { Authorization: `Bearer ${access_token}` },
+      });
+      const { email } = (await profileRes.json()) as { email: string };
+      if (!email) return errorRedirect('google_failed');
+
+      // Find user and build JWT
+      const { access_token: jwtToken, memberships, activeTenantId } =
+        await this.authService.loginByEmail(email);
+
+      const isProd = process.env.NODE_ENV === 'production';
+      const clientCookieBase = {
+        httpOnly: false as const,
+        secure: isProd,
+        sameSite: 'lax' as const,
+        maxAge: COOKIE_MAX_AGE,
+        path: '/',
+      };
+
+      res.cookie(COOKIE_NAME, jwtToken, { ...clientCookieBase, httpOnly: true });
+      res.cookie('inv360_role', 'user', clientCookieBase);
+
+      if (memberships.length === 0) {
+        return errorRedirect('no_tenant');
+      }
+
+      if (memberships.length > 1 || !activeTenantId) {
+        res.cookie('inv360_onboarded', 'false', clientCookieBase);
+        return res.redirect(`${frontendUrl}/select-tenant`);
+      }
+
+      const tenant = await this.tenantsService.findById(activeTenantId);
+      res.cookie('inv360_onboarded', String(tenant?.isOnboarded ?? false), clientCookieBase);
+      const destination = tenant?.isOnboarded
+        ? `${frontendUrl}/dashboard`
+        : `${frontendUrl}/onboarding`;
+      return res.redirect(destination);
+    } catch (err) {
+      if (err instanceof Error && err.message.includes('cuenta')) {
+        return errorRedirect('no_account');
+      }
+      return errorRedirect('google_failed');
+    }
   }
 }

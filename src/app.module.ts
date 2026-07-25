@@ -10,6 +10,8 @@ import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
 import { CategoriesModule } from './categories/categories.module';
 import { CommonModule } from './common/common.module';
 import { RolesGuard } from './common/guards/roles.guard';
+import { InvitationsModule } from './invitations/invitations.module';
+import { MailModule } from './mail/mail.module';
 import { PlatformAdminModule } from './platform-admin/platform-admin.module';
 import { ProductsModule } from './products/products.module';
 import { TenantMembershipsModule } from './tenant-memberships/tenant-memberships.module';
@@ -41,6 +43,8 @@ import { UsersModule } from './users/users.module';
     MessagesModule,
     CategoriesModule,
     CommonModule,
+    InvitationsModule,
+    MailModule,
     PlatformAdminModule,
     ProductsModule,
     TenantMembershipsModule,

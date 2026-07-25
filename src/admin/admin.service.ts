@@ -1,10 +1,8 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import * as bcrypt from 'bcrypt';
-import { Role } from '../common/enums/role.enum';
-import { TenantRole } from '../common/enums/tenant-role.enum';
+import { InvitationsService } from '../invitations/invitations.service';
+import { MailService } from '../mail/mail.service';
 import { TenantMembershipsService } from '../tenant-memberships/tenant-memberships.service';
 import { TenantsService } from '../tenants/tenants.service';
-import { UsersService } from '../users/users.service';
 import type { CreateTenantDto } from './dto/create-tenant.dto';
 import type { UpdateTenantDto } from './dto/update-tenant.dto';
 
@@ -12,8 +10,9 @@ import type { UpdateTenantDto } from './dto/update-tenant.dto';
 export class AdminService {
   constructor(
     private readonly tenantsService: TenantsService,
-    private readonly usersService: UsersService,
     private readonly tenantMembershipsService: TenantMembershipsService,
+    private readonly invitationsService: InvitationsService,
+    private readonly mailService: MailService,
   ) {}
 
   async createTenant(dto: CreateTenantDto) {
@@ -22,26 +21,10 @@ export class AdminService {
       plan: dto.plan,
     });
 
-    // Find existing user or create a new one
-    let user = await this.usersService.findByEmail(dto.ownerEmail);
-    if (!user) {
-      const hashedPassword = await bcrypt.hash(dto.ownerPassword, 10);
-      user = await this.usersService.create({
-        name: dto.ownerName,
-        email: dto.ownerEmail,
-        password: hashedPassword,
-        globalRole: Role.User,
-      });
-    }
+    const invitation = await this.invitationsService.create(dto.ownerEmail, tenant.id);
+    await this.mailService.sendTenantInvitation(dto.ownerEmail, tenant.name, invitation.token);
 
-    await this.tenantMembershipsService.create({
-      userId: user.id,
-      tenantId: tenant.id,
-      role: TenantRole.Owner,
-    });
-
-    const { password: _p, ...safeUser } = user;
-    return { tenant, user: safeUser };
+    return { tenant, invitationSent: true };
   }
 
   findAllTenants() {

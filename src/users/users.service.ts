@@ -15,7 +15,7 @@ export class UsersService {
   create(data: {
     name: string;
     email: string;
-    password: string;
+    password?: string | null;
     globalRole?: Role;
   }): Promise<User> {
     const user = this.usersRepository.create(data);
@@ -40,6 +40,7 @@ export class UsersService {
   async changePassword(id: string, currentPassword: string, newPassword: string): Promise<void> {
     const user = await this.usersRepository.findOne({ where: { id } });
     if (!user) throw new NotFoundException('Usuario no encontrado');
+    if (!user.password) throw new UnauthorizedException('Esta cuenta usa Google para autenticarse');
     const match = await bcrypt.compare(currentPassword, user.password);
     if (!match) throw new UnauthorizedException('Contraseña actual incorrecta');
     const hashed = await bcrypt.hash(newPassword, 10);

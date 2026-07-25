@@ -1,5 +1,7 @@
 import { Module } from '@nestjs/common';
 import { AuthModule } from '../auth/auth.module';
+import { InvitationsModule } from '../invitations/invitations.module';
+import { MailModule } from '../mail/mail.module';
 import { PlatformAdminModule } from '../platform-admin/platform-admin.module';
 import { TenantMembershipsModule } from '../tenant-memberships/tenant-memberships.module';
 import { TenantsModule } from '../tenants/tenants.module';
@@ -9,7 +11,7 @@ import { AdminController } from './admin.controller';
 import { AdminService } from './admin.service';
 
 @Module({
-  imports: [TenantsModule, UsersModule, TenantMembershipsModule, PlatformAdminModule, AuthModule],
+  imports: [TenantsModule, UsersModule, TenantMembershipsModule, PlatformAdminModule, AuthModule, InvitationsModule, MailModule],
   controllers: [AdminController, AdminAuthController],
   providers: [AdminService],
 })
