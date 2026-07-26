@@ -11,7 +11,15 @@ import { AdminController } from './admin.controller';
 import { AdminService } from './admin.service';
 
 @Module({
-  imports: [TenantsModule, UsersModule, TenantMembershipsModule, PlatformAdminModule, AuthModule, InvitationsModule, MailModule],
+  imports: [
+    TenantsModule,
+    UsersModule,
+    TenantMembershipsModule,
+    PlatformAdminModule,
+    AuthModule,
+    InvitationsModule,
+    MailModule,
+  ],
   controllers: [AdminController, AdminAuthController],
   providers: [AdminService],
 })

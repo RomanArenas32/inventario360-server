@@ -1,3 +1,4 @@
+import { ApiProperty } from '@nestjs/swagger';
 import { IsBoolean, IsEnum, IsOptional, IsString } from 'class-validator';
 import { Plan } from '../../common/enums/plan.enum';
 
@@ -10,6 +11,7 @@ export class UpdateTenantDto {
   @IsOptional()
   phone?: string;
 
+  @ApiProperty({ enum: Plan, enumName: 'Plan', required: false })
   @IsEnum(Plan)
   @IsOptional()
   plan?: Plan;
