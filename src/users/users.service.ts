@@ -17,6 +17,7 @@ export class UsersService {
     email: string;
     password?: string | null;
     globalRole?: Role;
+    avatarUrl?: string | null;
   }): Promise<User> {
     const user = this.usersRepository.create(data);
     return this.usersRepository.save(user);
@@ -35,6 +36,10 @@ export class UsersService {
     if (!user) throw new NotFoundException('Usuario no encontrado');
     await this.usersRepository.update(id, { name });
     return { id, name };
+  }
+
+  async upsertAvatar(id: string, avatarUrl: string): Promise<void> {
+    await this.usersRepository.update(id, { avatarUrl });
   }
 
   async changePassword(id: string, currentPassword: string, newPassword: string): Promise<void> {

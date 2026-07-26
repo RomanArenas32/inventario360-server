@@ -64,7 +64,15 @@ export class AuthService {
       tenantRole,
     });
 
-    return { access_token: token, memberships, activeTenantId };
+    return { access_token: token, memberships, activeTenantId, userId: user.id };
+  }
+
+  async saveAvatar(userId: string, avatarUrl: string): Promise<void> {
+    await this.usersService.upsertAvatar(userId, avatarUrl);
+  }
+
+  getUser(userId: string) {
+    return this.usersService.findById(userId);
   }
 
   async switchTenant(userId: string, tenantId: string) {

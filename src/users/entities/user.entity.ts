@@ -16,6 +16,9 @@ export class User {
   @Column({ type: 'varchar', nullable: true })
   password: string | null;
 
+  @Column({ type: 'varchar', nullable: true })
+  avatarUrl: string | null;
+
   @Column({ type: 'enum', enum: Role, default: Role.User })
   globalRole: Role;
 

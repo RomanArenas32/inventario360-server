@@ -68,12 +68,15 @@ export class AuthController {
       this.tenantMembershipsService.findByUserId(user.id),
     ]);
 
+    const userRecord = await this.authService.getUser(user.id);
+
     return {
       id: user.id,
       name: user.name,
       email: user.email,
       role: user.globalRole,
       tenantRole: user.tenantRole,
+      avatarUrl: userRecord?.avatarUrl ?? null,
       tenant: tenant ? { id: tenant.id, name: tenant.name, isOnboarded: tenant.isOnboarded } : null,
       tenants: memberships.map((m) => ({
         id: m.tenantId,
@@ -125,12 +128,17 @@ export class AuthController {
       const profileRes = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
         headers: { Authorization: `Bearer ${access_token}` },
       });
-      const { email } = (await profileRes.json()) as { email: string };
+      const { email, picture } = (await profileRes.json()) as { email: string; picture?: string };
       if (!email) return errorRedirect('google_failed');
 
       // Find user and build JWT
-      const { access_token: jwtToken, memberships, activeTenantId } =
+      const { access_token: jwtToken, memberships, activeTenantId, userId } =
         await this.authService.loginByEmail(email);
+
+      // Save Google avatar (best-effort)
+      if (picture && userId) {
+        void this.authService.saveAvatar(userId, picture);
+      }
 
       const isProd = process.env.NODE_ENV === 'production';
       const clientCookieBase = {
