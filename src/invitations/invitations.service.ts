@@ -13,7 +13,14 @@ export class InvitationsService {
     const token = randomUUID();
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + EXPIRY_DAYS);
-    return this.invitationRepository.save({ token, email, tenantId, role, expiresAt, acceptedAt: null });
+    return this.invitationRepository.save({
+      token,
+      email,
+      tenantId,
+      role,
+      expiresAt,
+      acceptedAt: null,
+    });
   }
 
   async validate(token: string) {
