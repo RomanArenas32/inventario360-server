@@ -1,10 +1,10 @@
 import { Body, Controller, Delete, Get, Param, Patch, Post, Query } from '@nestjs/common';
 import { Public } from '../common/decorators/public.decorator';
 import { RoleG } from '../common/decorators/role-guard.decorator';
-import { MessageStatus } from '../common/enums/message-status.enum';
 import { Role } from '../common/enums/role.enum';
-import { UpdateMessageDto } from './dto/update-message.dto';
 import { CreateMessageDto } from './dto/create-message.dto';
+import { MessageQueryDto } from './dto/message-query.dto';
+import { UpdateMessageDto } from './dto/update-message.dto';
 import { MessagesService } from './messages.service';
 
 @Controller('messages')
@@ -19,8 +19,8 @@ export class MessagesController {
 
   @Get()
   @RoleG(Role.Admin)
-  findAll(@Query('status') status?: MessageStatus) {
-    return this.messagesService.findAll(status);
+  findAll(@Query() query: MessageQueryDto) {
+    return this.messagesService.findAll(query);
   }
 
   @Get('pending-count')

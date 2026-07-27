@@ -1,8 +1,10 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { MessageStatus } from '../../common/enums/message-status.enum';
+import { PaginatedResult } from '../../common/dto/paginated-result';
+import { paginate } from '../../common/utils/paginate.util';
 import { CreateMessageDto } from '../dto/create-message.dto';
+import { MessageQueryDto } from '../dto/message-query.dto';
 import { UpdateMessageDto } from '../dto/update-message.dto';
 import { ContactMessage } from '../entities/contact-message.entity';
 
@@ -18,9 +20,9 @@ export class MessageRepository {
     return this.repo.save(message);
   }
 
-  findAll(status?: MessageStatus): Promise<ContactMessage[]> {
-    const where = status ? { status } : {};
-    return this.repo.find({ where, order: { createdAt: 'DESC' } });
+  findAll(query: MessageQueryDto): Promise<PaginatedResult<ContactMessage>> {
+    const where = query.status ? { status: query.status } : {};
+    return paginate(this.repo, query, where, 'createdAt');
   }
 
   findOne(id: string): Promise<ContactMessage | null> {
@@ -37,6 +39,6 @@ export class MessageRepository {
   }
 
   countPending(): Promise<number> {
-    return this.repo.count({ where: { status: MessageStatus.Pending } });
+    return this.repo.count({ where: { status: 'pending' as ContactMessage['status'] } });
   }
 }
