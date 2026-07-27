@@ -1,61 +1,37 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
 import type { CreateProductDto } from './dto/create-product.dto';
 import type { UpdateProductDto } from './dto/update-product.dto';
-import { Product } from './entities/product.entity';
+import { ProductRepository } from './repositories/product.repository';
 
 @Injectable()
 export class ProductsService {
-  constructor(
-    @InjectRepository(Product)
-    private readonly productsRepository: Repository<Product>,
-  ) {}
+  constructor(private readonly productRepository: ProductRepository) {}
 
-  create(dto: CreateProductDto, tenantId: string): Promise<Product> {
-    const product = this.productsRepository.create({ ...dto, tenantId });
-    return this.productsRepository.save(product);
+  create(dto: CreateProductDto, tenantId: string) {
+    return this.productRepository.create(dto, tenantId);
   }
 
-  findAll(tenantId: string): Promise<Product[]> {
-    return this.productsRepository.find({
-      where: { tenantId },
-      relations: { category: true },
-      order: { name: 'ASC' },
-    });
+  findAll(tenantId: string) {
+    return this.productRepository.findAll(tenantId);
   }
 
-  async findOne(id: string, tenantId: string): Promise<Product> {
-    const product = await this.productsRepository.findOne({
-      where: { id, tenantId },
-      relations: { category: true },
-    });
+  async findOne(id: string, tenantId: string) {
+    const product = await this.productRepository.findOne(id, tenantId);
     if (!product) throw new NotFoundException('Producto no encontrado');
     return product;
   }
 
-  async update(id: string, dto: UpdateProductDto, tenantId: string): Promise<Product> {
+  async update(id: string, dto: UpdateProductDto, tenantId: string) {
     await this.findOne(id, tenantId);
-    await this.productsRepository.update(id, dto);
-    return this.productsRepository.findOneOrFail({
-      where: { id },
-      relations: { category: true },
-    });
+    return this.productRepository.update(id, dto);
   }
 
   async remove(id: string, tenantId: string): Promise<void> {
     await this.findOne(id, tenantId);
-    await this.productsRepository.delete(id);
+    await this.productRepository.delete(id);
   }
 
-  findLowStock(tenantId: string): Promise<Product[]> {
-    return this.productsRepository
-      .createQueryBuilder('product')
-      .where('product.tenantId = :tenantId', { tenantId })
-      .andWhere('product.stock <= product.minStock')
-      .andWhere('product.minStock > 0')
-      .leftJoinAndSelect('product.category', 'category')
-      .orderBy('product.stock', 'ASC')
-      .getMany();
+  findLowStock(tenantId: string) {
+    return this.productRepository.findLowStock(tenantId);
   }
 }

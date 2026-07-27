@@ -1,20 +1,15 @@
 import { Injectable } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-import { PlatformAdmin } from './entities/platform-admin.entity';
+import { PlatformAdminRepository } from './repositories/platform-admin.repository';
 
 @Injectable()
 export class PlatformAdminService {
-  constructor(
-    @InjectRepository(PlatformAdmin)
-    private readonly repo: Repository<PlatformAdmin>,
-  ) {}
+  constructor(private readonly platformAdminRepository: PlatformAdminRepository) {}
 
-  findByEmail(email: string): Promise<PlatformAdmin | null> {
-    return this.repo.findOne({ where: { email } });
+  findByEmail(email: string) {
+    return this.platformAdminRepository.findByEmail(email);
   }
 
-  findById(id: string): Promise<PlatformAdmin | null> {
-    return this.repo.findOne({ where: { id } });
+  findById(id: string) {
+    return this.platformAdminRepository.findById(id);
   }
 }

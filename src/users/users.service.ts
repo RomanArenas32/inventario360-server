@@ -1,16 +1,11 @@
 import { Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
 import * as bcrypt from 'bcrypt';
-import { Repository } from 'typeorm';
 import { Role } from '../common/enums/role.enum';
-import { User } from './entities/user.entity';
+import { UserRepository } from './repositories/user.repository';
 
 @Injectable()
 export class UsersService {
-  constructor(
-    @InjectRepository(User)
-    private readonly usersRepository: Repository<User>,
-  ) {}
+  constructor(private readonly userRepository: UserRepository) {}
 
   create(data: {
     name: string;
@@ -18,45 +13,44 @@ export class UsersService {
     password?: string | null;
     globalRole?: Role;
     avatarUrl?: string | null;
-  }): Promise<User> {
-    const user = this.usersRepository.create(data);
-    return this.usersRepository.save(user);
+  }) {
+    return this.userRepository.create(data);
   }
 
-  findByEmail(email: string): Promise<User | null> {
-    return this.usersRepository.findOne({ where: { email } });
+  findByEmail(email: string) {
+    return this.userRepository.findByEmail(email);
   }
 
-  findById(id: string): Promise<User | null> {
-    return this.usersRepository.findOne({ where: { id } });
+  findById(id: string) {
+    return this.userRepository.findById(id);
   }
 
   async updateProfile(id: string, name: string): Promise<{ id: string; name: string }> {
-    const user = await this.usersRepository.findOne({ where: { id } });
+    const user = await this.userRepository.findById(id);
     if (!user) throw new NotFoundException('Usuario no encontrado');
-    await this.usersRepository.update(id, { name });
+    await this.userRepository.update(id, { name });
     return { id, name };
   }
 
-  async upsertAvatar(id: string, avatarUrl: string): Promise<void> {
-    await this.usersRepository.update(id, { avatarUrl });
-  }
-
-  async deactivate(id: string): Promise<void> {
-    await this.usersRepository.update(id, { isActive: false });
-  }
-
-  async reactivate(id: string): Promise<void> {
-    await this.usersRepository.update(id, { isActive: true });
+  upsertAvatar(id: string, avatarUrl: string) {
+    return this.userRepository.update(id, { avatarUrl });
   }
 
   async changePassword(id: string, currentPassword: string, newPassword: string): Promise<void> {
-    const user = await this.usersRepository.findOne({ where: { id } });
+    const user = await this.userRepository.findById(id);
     if (!user) throw new NotFoundException('Usuario no encontrado');
     if (!user.password) throw new UnauthorizedException('Esta cuenta usa Google para autenticarse');
     const match = await bcrypt.compare(currentPassword, user.password);
     if (!match) throw new UnauthorizedException('Contraseña actual incorrecta');
     const hashed = await bcrypt.hash(newPassword, 10);
-    await this.usersRepository.update(id, { password: hashed });
+    await this.userRepository.update(id, { password: hashed });
+  }
+
+  deactivate(id: string) {
+    return this.userRepository.update(id, { isActive: false });
+  }
+
+  reactivate(id: string) {
+    return this.userRepository.update(id, { isActive: true });
   }
 }

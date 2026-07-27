@@ -8,6 +8,7 @@ import { UsersModule } from '../users/users.module';
 import { TenantInvitation } from './entities/tenant-invitation.entity';
 import { InvitationsController } from './invitations.controller';
 import { InvitationsService } from './invitations.service';
+import { InvitationRepository } from './repositories/invitation.repository';
 
 @Module({
   imports: [
@@ -24,7 +25,7 @@ import { InvitationsService } from './invitations.service';
     }),
   ],
   controllers: [InvitationsController],
-  providers: [InvitationsService],
+  providers: [InvitationsService, InvitationRepository],
   exports: [InvitationsService],
 })
 export class InvitationsModule {}

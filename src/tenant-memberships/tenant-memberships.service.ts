@@ -1,56 +1,38 @@
 import { ConflictException, Injectable } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
 import { TenantRole } from '../common/enums/tenant-role.enum';
-import { TenantMembership } from './entities/tenant-membership.entity';
+import { TenantMembershipRepository } from './repositories/tenant-membership.repository';
 
 @Injectable()
 export class TenantMembershipsService {
-  constructor(
-    @InjectRepository(TenantMembership)
-    private readonly repo: Repository<TenantMembership>,
-  ) {}
+  constructor(private readonly membershipRepository: TenantMembershipRepository) {}
 
-  async create(data: {
-    userId: string;
-    tenantId: string;
-    role: TenantRole;
-  }): Promise<TenantMembership> {
-    const existing = await this.repo.findOne({
-      where: { userId: data.userId, tenantId: data.tenantId },
-    });
+  async create(data: { userId: string; tenantId: string; role: TenantRole }) {
+    const existing = await this.membershipRepository.findMembership(data.userId, data.tenantId);
     if (existing) throw new ConflictException('El usuario ya es miembro de este negocio');
-    const membership = this.repo.create(data);
-    return this.repo.save(membership);
+    return this.membershipRepository.save(data);
   }
 
-  findByUserId(userId: string): Promise<TenantMembership[]> {
-    return this.repo.find({
-      where: { userId, isActive: true },
-      relations: { tenant: true },
-    });
+  findByUserId(userId: string) {
+    return this.membershipRepository.findByUserId(userId);
   }
 
-  findMembership(userId: string, tenantId: string): Promise<TenantMembership | null> {
-    return this.repo.findOne({ where: { userId, tenantId } });
+  findMembership(userId: string, tenantId: string) {
+    return this.membershipRepository.findMembership(userId, tenantId);
   }
 
-  findByTenantId(tenantId: string): Promise<TenantMembership[]> {
-    return this.repo.find({
-      where: { tenantId },
-      relations: { user: true },
-    });
+  findByTenantId(tenantId: string) {
+    return this.membershipRepository.findByTenantId(tenantId);
   }
 
-  async deleteByTenantId(tenantId: string): Promise<void> {
-    await this.repo.delete({ tenantId });
+  deleteByTenantId(tenantId: string) {
+    return this.membershipRepository.deleteByTenantId(tenantId);
   }
 
-  async updateRole(membershipId: string, role: TenantRole): Promise<void> {
-    await this.repo.update(membershipId, { role });
+  updateRole(membershipId: string, role: TenantRole) {
+    return this.membershipRepository.updateRole(membershipId, role);
   }
 
-  async deleteByUserId(userId: string, tenantId: string): Promise<void> {
-    await this.repo.delete({ userId, tenantId });
+  deleteByUserId(userId: string, tenantId: string) {
+    return this.membershipRepository.deleteByUserId(userId, tenantId);
   }
 }
