@@ -15,7 +15,10 @@ export class TenantsController {
   @Patch('onboarding')
   @RoleG(TenantRole.Owner)
   completeOnboarding(@CurrentUser() user: RequestUser, @Body() dto: OnboardingDto) {
-    return this.tenantsService.completeOnboarding(user.activeTenantId!, dto.businessType);
+    return this.tenantsService.completeOnboarding(user.activeTenantId!, dto.businessType, {
+      businessName: dto.businessName,
+      phone: dto.phone,
+    });
   }
 
   @Get('members')

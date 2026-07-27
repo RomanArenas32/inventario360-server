@@ -42,6 +42,14 @@ export class UsersService {
     await this.usersRepository.update(id, { avatarUrl });
   }
 
+  async deactivate(id: string): Promise<void> {
+    await this.usersRepository.update(id, { isActive: false });
+  }
+
+  async reactivate(id: string): Promise<void> {
+    await this.usersRepository.update(id, { isActive: true });
+  }
+
   async changePassword(id: string, currentPassword: string, newPassword: string): Promise<void> {
     const user = await this.usersRepository.findOne({ where: { id } });
     if (!user) throw new NotFoundException('Usuario no encontrado');

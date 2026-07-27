@@ -77,7 +77,7 @@ export class AuthController {
       role: user.globalRole,
       tenantRole: user.tenantRole,
       avatarUrl: userRecord?.avatarUrl ?? null,
-      tenant: tenant ? { id: tenant.id, name: tenant.name, isOnboarded: tenant.isOnboarded } : null,
+      tenant: tenant ? { id: tenant.id, name: tenant.name, phone: tenant.phone ?? null, isOnboarded: tenant.isOnboarded } : null,
       tenants: memberships.map((m) => ({
         id: m.tenantId,
         name: m.tenant?.name ?? '',

@@ -18,8 +18,15 @@ export class TenantRepository {
     return this.repo.save(tenant);
   }
 
-  async completeOnboarding(tenantId: string, businessType: BusinessType): Promise<Tenant> {
-    await this.repo.update(tenantId, { businessType, isOnboarded: true });
+  async completeOnboarding(
+    tenantId: string,
+    businessType: BusinessType,
+    extras: { businessName?: string; phone?: string } = {},
+  ): Promise<Tenant> {
+    const update: Partial<Tenant> = { businessType, isOnboarded: true };
+    if (extras.businessName) update.name = extras.businessName;
+    if (extras.phone) update.phone = extras.phone;
+    await this.repo.update(tenantId, update);
     return this.repo.findOneOrFail({ where: { id: tenantId } });
   }
 
