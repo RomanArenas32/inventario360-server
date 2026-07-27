@@ -170,7 +170,9 @@ export class InvitationsController {
       res.cookie('inv360_role', user.globalRole, cookieBase);
       res.cookie('inv360_onboarded', String(tenant?.isOnboarded ?? false), cookieBase);
 
-      const destination = tenant?.isOnboarded ? `${frontendUrl}/dashboard` : `${frontendUrl}/onboarding`;
+      const destination = tenant?.isOnboarded
+        ? `${frontendUrl}/dashboard`
+        : `${frontendUrl}/onboarding`;
       res.redirect(destination);
     } catch {
       return errorRedirect('google_failed');

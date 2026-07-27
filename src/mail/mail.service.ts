@@ -10,7 +10,8 @@ export class MailService {
   private readonly appUrl: string;
 
   constructor(private readonly config: ConfigService) {
-    this.from = config.get<string>('MAIL_FROM') ?? 'Inventario360 <inventario360.soporte@gmail.com>';
+    this.from =
+      config.get<string>('MAIL_FROM') ?? 'Inventario360 <inventario360.soporte@gmail.com>';
     this.appUrl = config.get<string>('APP_URL') ?? 'http://localhost:3000';
 
     this.transporter = nodemailer.createTransport({

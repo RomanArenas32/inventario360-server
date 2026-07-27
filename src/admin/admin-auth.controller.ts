@@ -1,4 +1,12 @@
-import { Body, Controller, ForbiddenException, Get, Post, Res, UnauthorizedException } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  ForbiddenException,
+  Get,
+  Post,
+  Res,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { Throttle } from '@nestjs/throttler';
 import * as bcrypt from 'bcrypt';

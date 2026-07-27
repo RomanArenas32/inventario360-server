@@ -38,9 +38,7 @@ export class AdminService {
       const inv = pendingMap.get(t.id);
       return {
         ...t,
-        pendingInvitation: inv
-          ? { email: inv.email, expired: now > inv.expiresAt }
-          : null,
+        pendingInvitation: inv ? { email: inv.email, expired: now > inv.expiresAt } : null,
       };
     });
   }

@@ -19,7 +19,14 @@ export class InvitationsService {
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + EXPIRY_DAYS);
 
-    const invitation = this.repo.create({ token, email, tenantId, role, expiresAt, acceptedAt: null });
+    const invitation = this.repo.create({
+      token,
+      email,
+      tenantId,
+      role,
+      expiresAt,
+      acceptedAt: null,
+    });
     return this.repo.save(invitation);
   }
 

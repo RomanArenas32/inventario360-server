@@ -10,7 +10,13 @@ import { TenantsController } from './tenants.controller';
 import { TenantsService } from './tenants.service';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Tenant]), TenantMembershipsModule, UsersModule, forwardRef(() => InvitationsModule), MailModule],
+  imports: [
+    TypeOrmModule.forFeature([Tenant]),
+    TenantMembershipsModule,
+    UsersModule,
+    forwardRef(() => InvitationsModule),
+    MailModule,
+  ],
   controllers: [TenantsController],
   providers: [TenantsService, TenantRepository],
   exports: [TenantsService, TenantRepository],

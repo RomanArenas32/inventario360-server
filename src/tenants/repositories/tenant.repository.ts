@@ -13,7 +13,11 @@ export class TenantRepository {
     private readonly repo: Repository<Tenant>,
   ) {}
 
-  create(name: string, businessType?: BusinessType, options: { phone?: string; plan?: Plan } = {}): Promise<Tenant> {
+  create(
+    name: string,
+    businessType?: BusinessType,
+    options: { phone?: string; plan?: Plan } = {},
+  ): Promise<Tenant> {
     const tenant = this.repo.create({ name, businessType, ...options });
     return this.repo.save(tenant);
   }

@@ -77,7 +77,14 @@ export class AuthController {
       role: user.globalRole,
       tenantRole: user.tenantRole,
       avatarUrl: userRecord?.avatarUrl ?? null,
-      tenant: tenant ? { id: tenant.id, name: tenant.name, phone: tenant.phone ?? null, isOnboarded: tenant.isOnboarded } : null,
+      tenant: tenant
+        ? {
+            id: tenant.id,
+            name: tenant.name,
+            phone: tenant.phone ?? null,
+            isOnboarded: tenant.isOnboarded,
+          }
+        : null,
       tenants: memberships.map((m) => ({
         id: m.tenantId,
         name: m.tenant?.name ?? '',
@@ -132,8 +139,12 @@ export class AuthController {
       if (!email) return errorRedirect('google_failed');
 
       // Find user and build JWT
-      const { access_token: jwtToken, memberships, activeTenantId, userId } =
-        await this.authService.loginByEmail(email);
+      const {
+        access_token: jwtToken,
+        memberships,
+        activeTenantId,
+        userId,
+      } = await this.authService.loginByEmail(email);
 
       // Save Google avatar (best-effort)
       if (picture && userId) {
