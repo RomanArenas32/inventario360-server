@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { In, Repository } from 'typeorm';
 import { PaginatedResult } from '../../common/dto/paginated-result';
 import { paginate } from '../../common/utils/paginate.util';
 import { CreateMessageDto } from '../dto/create-message.dto';
@@ -21,7 +21,7 @@ export class MessageRepository {
   }
 
   findAll(query: MessageQueryDto): Promise<PaginatedResult<ContactMessage>> {
-    const where = query.status ? { status: query.status } : {};
+    const where = query.status?.length ? { status: In(query.status) } : {};
     return paginate(this.repo, query, where, 'createdAt');
   }
 

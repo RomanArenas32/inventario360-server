@@ -38,4 +38,8 @@ export class InvitationsService {
   findPendingByTenantIds(tenantIds: string[]) {
     return this.invitationRepository.findPendingByTenantIds(tenantIds);
   }
+
+  findAllLatestByTenantIds(tenantIds: string[]) {
+    return this.invitationRepository.findAllLatestByTenantIds(tenantIds);
+  }
 }

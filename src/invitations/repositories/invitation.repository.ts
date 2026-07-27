@@ -47,4 +47,32 @@ export class InvitationRepository {
     }
     return map;
   }
+
+  async findAllLatestByTenantIds(tenantIds: string[]): Promise<
+    Map<
+      string,
+      { email: string; sentAt: Date; acceptedAt: Date | null; expiresAt: Date }
+    >
+  > {
+    if (tenantIds.length === 0) return new Map();
+    const invitations = await this.repo.find({
+      where: { tenantId: In(tenantIds) },
+      order: { createdAt: 'DESC' },
+    });
+    const map = new Map<
+      string,
+      { email: string; sentAt: Date; acceptedAt: Date | null; expiresAt: Date }
+    >();
+    for (const inv of invitations) {
+      if (!map.has(inv.tenantId)) {
+        map.set(inv.tenantId, {
+          email: inv.email,
+          sentAt: inv.createdAt,
+          acceptedAt: inv.acceptedAt,
+          expiresAt: inv.expiresAt,
+        });
+      }
+    }
+    return map;
+  }
 }
