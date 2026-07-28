@@ -29,6 +29,10 @@ export class ProductRepository {
     return this.repo.findOne({ where: { id, tenantId }, relations: { category: true } });
   }
 
+  findByCode(code: string, tenantId: string): Promise<Product | null> {
+    return this.repo.findOne({ where: { code, tenantId } });
+  }
+
   async update(id: string, dto: UpdateProductDto): Promise<Product> {
     await this.repo.update(id, dto);
     return this.repo.findOneOrFail({ where: { id }, relations: { category: true } });
