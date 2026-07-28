@@ -1,13 +1,27 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import { CategoriesService } from '../categories/categories.service';
 import type { CreateProductDto } from './dto/create-product.dto';
 import type { UpdateProductDto } from './dto/update-product.dto';
 import { ProductRepository } from './repositories/product.repository';
 
 @Injectable()
 export class ProductsService {
-  constructor(private readonly productRepository: ProductRepository) {}
+  constructor(
+    private readonly productRepository: ProductRepository,
+    private readonly categoriesService: CategoriesService,
+  ) {}
 
-  create(dto: CreateProductDto, tenantId: string) {
+  async create(dto: CreateProductDto, tenantId: string) {
+    if (dto.categoryId) {
+      await this.categoriesService.findOne(dto.categoryId, tenantId);
+    }
+
+    const existingProduct = await this.productRepository.findByCode(dto.code, tenantId);
+
+    if (existingProduct) {
+      throw new ConflictException('Ya existe un producto con ese código');
+    }
+
     return this.productRepository.create(dto, tenantId);
   }
 
@@ -22,7 +36,19 @@ export class ProductsService {
   }
 
   async update(id: string, dto: UpdateProductDto, tenantId: string) {
-    await this.findOne(id, tenantId);
+    const product = await this.findOne(id, tenantId);
+    if (dto.categoryId) {
+      await this.categoriesService.findOne(dto.categoryId, tenantId);
+    }
+
+    if (dto.code !== undefined && dto.code !== product.code) {
+      const existingProduct = await this.productRepository.findByCode(dto.code, tenantId);
+
+      if (existingProduct) {
+        throw new ConflictException('Ya existe un producto con ese código');
+      }
+    }
+
     return this.productRepository.update(id, dto);
   }
 
