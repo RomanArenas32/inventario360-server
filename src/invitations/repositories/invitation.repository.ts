@@ -48,11 +48,10 @@ export class InvitationRepository {
     return map;
   }
 
-  async findAllLatestByTenantIds(tenantIds: string[]): Promise<
-    Map<
-      string,
-      { email: string; sentAt: Date; acceptedAt: Date | null; expiresAt: Date }
-    >
+  async findAllLatestByTenantIds(
+    tenantIds: string[],
+  ): Promise<
+    Map<string, { email: string; sentAt: Date; acceptedAt: Date | null; expiresAt: Date }>
   > {
     if (tenantIds.length === 0) return new Map();
     const invitations = await this.repo.find({
