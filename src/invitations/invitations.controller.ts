@@ -125,9 +125,13 @@ export class InvitationsController {
       }
 
       // Find or create user (no password for Google users)
+      const displayName = invitation.memberName || name;
       let user = await this.usersService.findByEmail(email);
       if (!user) {
-        user = await this.usersService.create({ name, email, globalRole: Role.User });
+        user = await this.usersService.create({ name: displayName, email, globalRole: Role.User });
+      } else if (invitation.memberName) {
+        await this.usersService.updateProfile(user.id, invitation.memberName);
+        user = { ...user, name: invitation.memberName };
       }
 
       // Create membership (idempotent: throws ConflictException if already member)

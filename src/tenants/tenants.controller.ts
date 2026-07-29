@@ -5,7 +5,7 @@ import { TenantRole } from '../common/enums/tenant-role.enum';
 import type { RequestUser } from '../common/types/request-user.type';
 import { AddMemberDto } from './dto/add-member.dto';
 import { OnboardingDto } from './dto/onboarding.dto';
-import { UpdateMemberRoleDto } from './dto/update-member-role.dto';
+import { UpdateMemberDto } from './dto/update-member-role.dto';
 import { TenantsService } from './tenants.service';
 
 @Controller('tenants')
@@ -27,6 +27,18 @@ export class TenantsController {
     return this.tenantsService.getMembers(user.activeTenantId!);
   }
 
+  @Get('invitations/pending')
+  @RoleG(TenantRole.Owner)
+  getPendingInvitations(@CurrentUser() user: RequestUser) {
+    return this.tenantsService.getPendingInvitations(user.activeTenantId!);
+  }
+
+  @Delete('invitations/pending/:invitationId')
+  @RoleG(TenantRole.Owner)
+  revokeInvitation(@CurrentUser() user: RequestUser, @Param('invitationId') invitationId: string) {
+    return this.tenantsService.revokeInvitation(user.activeTenantId!, invitationId);
+  }
+
   @Post('members')
   @RoleG(TenantRole.Owner)
   addMember(@CurrentUser() user: RequestUser, @Body() dto: AddMemberDto) {
@@ -35,12 +47,12 @@ export class TenantsController {
 
   @Patch('members/:userId')
   @RoleG(TenantRole.Owner)
-  updateMemberRole(
+  updateMember(
     @CurrentUser() user: RequestUser,
     @Param('userId') userId: string,
-    @Body() dto: UpdateMemberRoleDto,
+    @Body() dto: UpdateMemberDto,
   ) {
-    return this.tenantsService.updateMemberRole(user.activeTenantId!, userId, dto.role);
+    return this.tenantsService.updateMember(user.activeTenantId!, userId, dto);
   }
 
   @Delete('members/:userId')
