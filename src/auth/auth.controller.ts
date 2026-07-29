@@ -104,6 +104,7 @@ export class AuthController {
       response_type: 'code',
       scope: 'openid email profile',
       access_type: 'online',
+      prompt: 'select_account',
     });
     res.redirect(`https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`);
   }
