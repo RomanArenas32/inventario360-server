@@ -1,4 +1,4 @@
-import { IsEmail, IsEnum, IsOptional } from 'class-validator';
+import { IsBoolean, IsEmail, IsEnum, IsOptional, IsString, MinLength } from 'class-validator';
 import { TenantRole } from '../../common/enums/tenant-role.enum';
 
 export class AddMemberDto {
@@ -6,6 +6,15 @@ export class AddMemberDto {
   email: string;
 
   @IsOptional()
+  @IsString()
+  @MinLength(2)
+  name?: string;
+
+  @IsOptional()
   @IsEnum(TenantRole)
   role?: TenantRole;
+
+  @IsOptional()
+  @IsBoolean()
+  resend?: boolean;
 }

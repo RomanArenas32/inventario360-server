@@ -6,6 +6,7 @@ import { ExtractJwt, Strategy } from 'passport-jwt';
 import { Role } from '../../common/enums/role.enum';
 import { TenantRole } from '../../common/enums/tenant-role.enum';
 import type { RequestUser } from '../../common/types/request-user.type';
+import { TenantMembershipsService } from '../../tenant-memberships/tenant-memberships.service';
 import { PlatformAdminService } from '../../platform-admin/platform-admin.service';
 import { UsersService } from '../../users/users.service';
 
@@ -24,6 +25,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     config: ConfigService,
     private readonly usersService: UsersService,
     private readonly platformAdminService: PlatformAdminService,
+    private readonly membershipsService: TenantMembershipsService,
   ) {
     super({
       jwtFromRequest: ExtractJwt.fromExtractors([
@@ -53,6 +55,15 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
 
     const user = await this.usersService.findById(payload.sub);
     if (!user || !user.isActive) throw new UnauthorizedException();
+
+    if (payload.activeTenantId) {
+      const membership = await this.membershipsService.findMembership(
+        payload.sub,
+        payload.activeTenantId,
+      );
+      if (!membership || !membership.isActive) throw new UnauthorizedException();
+    }
+
     return {
       id: user.id,
       name: user.name,

@@ -15,6 +15,9 @@ export class TenantInvitation {
   @Column()
   tenantId: string;
 
+  @Column({ nullable: true })
+  memberName: string;
+
   @Column({ type: 'enum', enum: TenantRole, default: TenantRole.Owner })
   role: TenantRole;
 
