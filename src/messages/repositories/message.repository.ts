@@ -1,7 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { In, Repository } from 'typeorm';
+import { In, Repository, type FindOptionsWhere } from 'typeorm';
 import { PaginatedResult } from '../../common/dto/paginated-result';
+import { MessageStatus } from '../../common/enums/message-status.enum';
 import { paginate } from '../../common/utils/paginate.util';
 import { CreateMessageDto } from '../dto/create-message.dto';
 import { MessageQueryDto } from '../dto/message-query.dto';
@@ -27,6 +28,21 @@ export class MessageRepository {
 
   findOne(id: string): Promise<ContactMessage | null> {
     return this.repo.findOne({ where: { id } });
+  }
+
+  findActiveByContact(email: string, phone?: string): Promise<ContactMessage | null> {
+    const activeStatuses = [MessageStatus.Pending, MessageStatus.Read, MessageStatus.Snoozed];
+
+    const where: FindOptionsWhere<ContactMessage>[] = [{ email, status: In(activeStatuses) }];
+
+    if (phone) {
+      where.push({ phone, status: In(activeStatuses) });
+    }
+
+    return this.repo.findOne({
+      where,
+      order: { createdAt: 'DESC' },
+    });
   }
 
   async update(id: string, dto: UpdateMessageDto): Promise<ContactMessage> {

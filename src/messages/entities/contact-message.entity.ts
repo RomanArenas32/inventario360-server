@@ -18,6 +18,9 @@ export class ContactMessage {
   @Column()
   email: string;
 
+  @Column({ type: 'varchar', length: 100, nullable: true })
+  businessType: string | null;
+
   @Column({ nullable: true })
   phone: string;
 
