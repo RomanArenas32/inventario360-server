@@ -10,8 +10,29 @@ import { MessageRepository } from './repositories/message.repository';
 export class MessagesService {
   constructor(private readonly messageRepository: MessageRepository) {}
 
-  create(dto: CreateMessageDto) {
-    return this.messageRepository.create(dto);
+  async create(dto: CreateMessageDto): Promise<{ received: true }> {
+    const normalizedEmail = dto.email.trim().toLowerCase();
+
+    const phoneDigits = dto.phone?.replace(/\D/g, '');
+    const normalizedPhone = phoneDigits ? `+${phoneDigits}` : undefined;
+
+    const existingRequest = await this.messageRepository.findActiveByContact(
+      normalizedEmail,
+      normalizedPhone,
+    );
+
+    if (!existingRequest) {
+      await this.messageRepository.create({
+        ...dto,
+        name: dto.name.trim(),
+        email: normalizedEmail,
+        businessType: dto.businessType.trim(),
+        phone: normalizedPhone,
+        message: dto.message.trim(),
+      });
+    }
+
+    return { received: true };
   }
 
   findAll(query: MessageQueryDto): Promise<PaginatedResult<ContactMessage>> {
