@@ -25,20 +25,32 @@ export class MailService {
     });
   }
 
-  async sendTenantInvitation(email: string, tenantName: string, token: string) {
+  async sendTenantInvitation(
+    email: string,
+    tenantName: string,
+    token: string,
+    role: 'owner' | 'staff' = 'staff',
+  ) {
     const link = `${this.appUrl}/login/invitation?token=${token}`;
+    const isOwner = role === 'owner';
+    const heading = isOwner
+      ? `Fuiste invitado a registrar tu local comercial en Inventario360`
+      : `Fuiste invitado a unirte al equipo de <strong>${tenantName}</strong>`;
+    const body = isOwner
+      ? `Hacé click en el botón para activar tu cuenta y configurar tu negocio. Este link expira en 7 días.`
+      : `Vas a formar parte del equipo de <strong>${tenantName}</strong> como empleado. Hacé click en el botón para activar tu cuenta. Este link expira en 7 días.`;
 
     try {
       await this.transporter.sendMail({
         from: this.from,
         to: email,
-        subject: `Invitación a ${tenantName} en Inventario360`,
+        subject: isOwner
+          ? `Invitación a registrar tu negocio en Inventario360`
+          : `Te invitaron a unirte a ${tenantName} en Inventario360`,
         html: `
           <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto; padding: 32px;">
-            <h2 style="margin: 0 0 8px;">Fuiste invitado a registrar tu local comercial ${tenantName}</h2>
-            <p style="color: #555; margin: 0 0 24px;">
-              Hacé click en el botón para activar tu cuenta. Este link expira en 7 días.
-            </p>
+            <h2 style="margin: 0 0 8px;">${heading}</h2>
+            <p style="color: #555; margin: 0 0 24px;">${body}</p>
             <a
               href="${link}"
               style="

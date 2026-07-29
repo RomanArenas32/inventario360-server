@@ -42,13 +42,13 @@ export class Product {
   isActive: boolean;
 
   @Column({ nullable: true })
-  categoryId: string;
+  categoryId: string | null;
 
   @ManyToOne(() => Category, (category) => category.products, {
     nullable: true,
     onDelete: 'SET NULL',
   })
-  category: Category;
+  category: Category | null;
 
   @Column()
   tenantId: string;

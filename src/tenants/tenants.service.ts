@@ -1,4 +1,10 @@
-import { Inject, Injectable, NotFoundException, forwardRef } from '@nestjs/common';
+import {
+  ConflictException,
+  Inject,
+  Injectable,
+  NotFoundException,
+  forwardRef,
+} from '@nestjs/common';
 import { TenantRole } from '../common/enums/tenant-role.enum';
 import { InvitationsService } from '../invitations/invitations.service';
 import { MailService } from '../mail/mail.service';
@@ -57,19 +63,54 @@ export class TenantsService {
     }));
   }
 
+  async revokeInvitation(tenantId: string, invitationId: string) {
+    const invitations = await this.invitationsService.findAllPendingByTenant(tenantId);
+    const belongs = invitations.some((inv) => inv.id === invitationId);
+    if (!belongs) throw new NotFoundException('Invitación no encontrada');
+    await this.invitationsService.revoke(invitationId);
+  }
+
+  async getPendingInvitations(tenantId: string) {
+    const invitations = await this.invitationsService.findAllPendingByTenant(tenantId);
+    return invitations.map((inv) => ({
+      invitationId: inv.id,
+      email: inv.email,
+      name: inv.memberName ?? inv.email,
+      role: inv.role,
+      sentAt: inv.createdAt,
+      expiresAt: inv.expiresAt,
+    }));
+  }
+
   async addMember(tenantId: string, dto: AddMemberDto) {
     const tenant = await this.tenantRepository.findByIdOrFail(tenantId);
     const role = dto.role ?? TenantRole.Staff;
-    const invitation = await this.invitationsService.create(dto.email, tenantId, role);
-    await this.mailService.sendTenantInvitation(dto.email, tenant.name, invitation.token);
+
+    const existingUser = await this.usersService.findByEmail(dto.email);
+    if (existingUser) {
+      const membership = await this.membershipsService.findMembership(existingUser.id, tenantId);
+      if (membership) throw new ConflictException('ALREADY_A_MEMBER');
+    }
+
+    if (!dto.resend) {
+      const pending = await this.invitationsService.findPendingByEmailAndTenant(
+        dto.email,
+        tenantId,
+      );
+      if (pending) throw new ConflictException('INVITATION_ALREADY_SENT');
+    }
+
+    const invitation = await this.invitationsService.create(dto.email, tenantId, role, dto.name);
+    await this.mailService.sendTenantInvitation(dto.email, tenant.name, invitation.token, role);
     return { ok: true, invitationSent: true };
   }
 
-  async updateMemberRole(tenantId: string, userId: string, role: TenantRole) {
+  async updateMember(tenantId: string, userId: string, data: { name?: string; role?: TenantRole }) {
     const membership = await this.membershipsService.findMembership(userId, tenantId);
     if (!membership) throw new NotFoundException('Miembro no encontrado');
-    await this.membershipsService.updateRole(membership.id, role);
-    return { userId, tenantId, role };
+    if (data.name) await this.usersService.updateProfile(userId, data.name);
+    if (data.role) await this.membershipsService.updateRole(membership.id, data.role);
+    return { ok: true };
   }
 
   async removeMember(tenantId: string, userId: string) {

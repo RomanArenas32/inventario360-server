@@ -32,13 +32,21 @@ export class AdminService {
   async findAllTenants() {
     const tenants = await this.tenantRepository.findAll();
     const tenantIds = tenants.map((t) => t.id);
-    const pendingMap = await this.invitationsService.findPendingByTenantIds(tenantIds);
+    const invMap = await this.invitationsService.findAllLatestByTenantIds(tenantIds);
     const now = new Date();
     return tenants.map((t) => {
-      const inv = pendingMap.get(t.id);
+      const inv = invMap.get(t.id);
       return {
         ...t,
-        pendingInvitation: inv ? { email: inv.email, expired: now > inv.expiresAt } : null,
+        invitation: inv
+          ? {
+              email: inv.email,
+              sentAt: inv.sentAt,
+              acceptedAt: inv.acceptedAt,
+              expiresAt: inv.expiresAt,
+              expired: !inv.acceptedAt && now > inv.expiresAt,
+            }
+          : null,
       };
     });
   }
