@@ -83,6 +83,7 @@ export class AuthController {
             name: tenant.name,
             phone: tenant.phone ?? null,
             isOnboarded: tenant.isOnboarded,
+            staffModules: tenant.staffModules,
           }
         : null,
       tenants: memberships.map((m) => ({
