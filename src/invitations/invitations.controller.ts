@@ -13,6 +13,12 @@ import { InvitationsService } from './invitations.service';
 
 const COOKIE_MAX_AGE = 7 * 24 * 60 * 60 * 1000;
 
+function normalizeEmail(email: string): string {
+  const [local, domain] = email.toLowerCase().split('@');
+  if (domain === 'gmail.com') return `${local.replace(/\./g, '')}@${domain}`;
+  return `${local}@${domain}`;
+}
+
 @Controller('invitations')
 export class InvitationsController {
   constructor(
@@ -77,6 +83,7 @@ export class InvitationsController {
       scope: 'openid email profile',
       state: token,
       access_type: 'online',
+      prompt: 'select_account',
     });
     res.redirect(`https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`);
   }
@@ -120,7 +127,7 @@ export class InvitationsController {
       const invitation = await this.invitationsService.validate(invitationToken);
 
       // Email must match invitation
-      if (email.toLowerCase() !== invitation.email.toLowerCase()) {
+      if (normalizeEmail(email) !== normalizeEmail(invitation.email)) {
         return errorRedirect('email_mismatch');
       }
 

@@ -26,6 +26,9 @@ export class Tenant {
   @Column({ default: true })
   isActive: boolean;
 
+  @Column({ type: 'jsonb', nullable: true, default: null })
+  staffModules: string[] | null;
+
   @OneToMany(() => TenantMembership, (m) => m.tenant)
   memberships: TenantMembership[];
 

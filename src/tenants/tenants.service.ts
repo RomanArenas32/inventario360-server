@@ -118,4 +118,16 @@ export class TenantsService {
     if (!membership) throw new NotFoundException('Miembro no encontrado');
     await this.membershipsService.deleteByUserId(userId, tenantId);
   }
+
+  // ── Settings ───────────────────────────────────────────────────────────────
+
+  async getSettings(tenantId: string) {
+    const tenant = await this.tenantRepository.findByIdOrFail(tenantId);
+    return { staffModules: tenant.staffModules };
+  }
+
+  async updateSettings(tenantId: string, staffModules: string[]) {
+    await this.tenantRepository.update(tenantId, { staffModules });
+    return { staffModules };
+  }
 }

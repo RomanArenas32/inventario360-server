@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post, Put } from '@nestjs/common';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { RoleG } from '../common/decorators/role-guard.decorator';
 import { TenantRole } from '../common/enums/tenant-role.enum';
@@ -59,5 +59,19 @@ export class TenantsController {
   @RoleG(TenantRole.Owner)
   removeMember(@CurrentUser() user: RequestUser, @Param('userId') userId: string) {
     return this.tenantsService.removeMember(user.activeTenantId!, userId);
+  }
+
+  // ── Settings ───────────────────────────────────────────────────────────────
+
+  @Get('settings')
+  @RoleG(TenantRole.Owner)
+  getSettings(@CurrentUser() user: RequestUser) {
+    return this.tenantsService.getSettings(user.activeTenantId!);
+  }
+
+  @Put('settings')
+  @RoleG(TenantRole.Owner)
+  updateSettings(@CurrentUser() user: RequestUser, @Body() body: { staffModules: string[] }) {
+    return this.tenantsService.updateSettings(user.activeTenantId!, body.staffModules);
   }
 }

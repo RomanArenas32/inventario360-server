@@ -1,4 +1,4 @@
-import { IsEmail, IsNotEmpty, IsOptional, IsString } from 'class-validator';
+import { IsEmail, IsNotEmpty, IsOptional, IsString, MaxLength } from 'class-validator';
 
 export class CreateMessageDto {
   @IsString()
@@ -7,6 +7,11 @@ export class CreateMessageDto {
 
   @IsEmail()
   email: string;
+
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(100)
+  businessType: string;
 
   @IsString()
   @IsOptional()
