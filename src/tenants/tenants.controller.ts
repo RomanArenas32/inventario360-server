@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, Put } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post, Put, Query } from '@nestjs/common';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { RoleG } from '../common/decorators/role-guard.decorator';
 import { TenantRole } from '../common/enums/tenant-role.enum';
@@ -23,8 +23,12 @@ export class TenantsController {
 
   @Get('members')
   @RoleG(TenantRole.Owner)
-  getMembers(@CurrentUser() user: RequestUser) {
-    return this.tenantsService.getMembers(user.activeTenantId!);
+  getMembers(
+    @CurrentUser() user: RequestUser,
+    @Query('search') search?: string,
+    @Query('role') role?: TenantRole,
+  ) {
+    return this.tenantsService.getMembers(user.activeTenantId!, { search, role });
   }
 
   @Get('invitations/pending')

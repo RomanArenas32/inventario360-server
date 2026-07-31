@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post, Query } from '@nestjs/common';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { RoleG } from '../common/decorators/role-guard.decorator';
 import { TenantRole } from '../common/enums/tenant-role.enum';
@@ -18,8 +18,15 @@ export class CategoriesController {
   }
 
   @Get()
-  findAll(@CurrentUser() user: RequestUser) {
-    return this.categoriesService.findAll(user.activeTenantId!);
+  findAll(
+    @CurrentUser() user: RequestUser,
+    @Query('search') search?: string,
+    @Query('hasDescription') hasDescription?: string,
+  ) {
+    return this.categoriesService.findAll(user.activeTenantId!, {
+      search,
+      hasDescription: hasDescription === undefined ? undefined : hasDescription === 'true',
+    });
   }
 
   @Get(':id')

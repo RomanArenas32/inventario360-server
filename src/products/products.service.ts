@@ -28,8 +28,16 @@ export class ProductsService {
     return this.productRepository.create(dto, tenantId);
   }
 
-  findAll(tenantId: string) {
-    return this.productRepository.findAll(tenantId);
+  findAll(
+    tenantId: string,
+    filters: {
+      search?: string;
+      categoryId?: string;
+      isActive?: boolean;
+      stock?: 'low' | 'ok';
+    } = {},
+  ) {
+    return this.productRepository.findAll(tenantId, filters);
   }
 
   async findOne(id: string, tenantId: string) {

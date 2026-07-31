@@ -20,8 +20,8 @@ export class TenantMembershipsService {
     return this.membershipRepository.findMembership(userId, tenantId);
   }
 
-  findByTenantId(tenantId: string) {
-    return this.membershipRepository.findByTenantId(tenantId);
+  findByTenantId(tenantId: string, filters: { search?: string; role?: TenantRole } = {}) {
+    return this.membershipRepository.findByTenantId(tenantId, filters);
   }
 
   deleteByTenantId(tenantId: string) {

@@ -6,6 +6,7 @@ import { UsersService } from '../users/users.service';
 import type { CreateTenantDto } from './dto/create-tenant.dto';
 import type { UpdateTenantDto } from './dto/update-tenant.dto';
 import { TenantRepository } from '../tenants/repositories/tenant.repository';
+import { Plan } from '../common/enums/plan.enum';
 
 @Injectable()
 export class AdminService {
@@ -29,8 +30,8 @@ export class AdminService {
     return { tenant, invitationSent: true };
   }
 
-  async findAllTenants() {
-    const tenants = await this.tenantRepository.findAll();
+  async findAllTenants(filters: { search?: string; plan?: Plan; isActive?: boolean } = {}) {
+    const tenants = await this.tenantRepository.findAll(filters);
     const tenantIds = tenants.map((t) => t.id);
     const invMap = await this.invitationsService.findAllLatestByTenantIds(tenantIds);
     const now = new Date();

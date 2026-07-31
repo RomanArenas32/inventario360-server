@@ -11,8 +11,8 @@ export class CategoriesService {
     return this.categoryRepository.create(dto, tenantId);
   }
 
-  findAll(tenantId: string) {
-    return this.categoryRepository.findAll(tenantId);
+  findAll(tenantId: string, filters: { search?: string; hasDescription?: boolean } = {}) {
+    return this.categoryRepository.findAll(tenantId, filters);
   }
 
   async findOne(id: string, tenantId: string) {
