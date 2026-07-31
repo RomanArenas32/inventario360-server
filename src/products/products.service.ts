@@ -1,4 +1,5 @@
 import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import { NotificationSettingsService } from '../notification-settings/notification-settings.service';
 import { CategoriesService } from '../categories/categories.service';
 import type { CreateProductDto } from './dto/create-product.dto';
 import type { UpdateProductDto } from './dto/update-product.dto';
@@ -9,6 +10,7 @@ export class ProductsService {
   constructor(
     private readonly productRepository: ProductRepository,
     private readonly categoriesService: CategoriesService,
+    private readonly notificationSettings: NotificationSettingsService,
   ) {}
 
   async create(dto: CreateProductDto, tenantId: string) {
@@ -49,7 +51,17 @@ export class ProductsService {
       }
     }
 
-    return this.productRepository.update(id, dto);
+    const updated = await this.productRepository.update(id, dto);
+
+    // Alerta de stock bajo — solo si el stock cambió y quedó en o bajo el mínimo
+    if (dto.stock !== undefined) {
+      const newMinStock = dto.minStock ?? product.minStock;
+      if (newMinStock > 0 && updated.stock <= newMinStock) {
+        void this.notificationSettings.notifyLowStock(tenantId, updated);
+      }
+    }
+
+    return updated;
   }
 
   async remove(id: string, tenantId: string): Promise<void> {
