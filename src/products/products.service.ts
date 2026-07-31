@@ -1,4 +1,5 @@
 import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import { QueryFailedError } from 'typeorm';
 import { CategoriesService } from '../categories/categories.service';
 import type { CreateProductDto } from './dto/create-product.dto';
 import type { UpdateProductDto } from './dto/update-product.dto';
@@ -54,7 +55,27 @@ export class ProductsService {
 
   async remove(id: string, tenantId: string): Promise<void> {
     await this.findOne(id, tenantId);
-    await this.productRepository.delete(id);
+
+    try {
+      await this.productRepository.delete(id);
+    } catch (error) {
+      if (error instanceof QueryFailedError) {
+        const driverError: unknown = error.driverError;
+
+        if (
+          typeof driverError === 'object' &&
+          driverError !== null &&
+          'code' in driverError &&
+          driverError.code === '23503'
+        ) {
+          throw new ConflictException(
+            'No se puede eliminar un producto con movimientos de stock. Podés marcarlo como inactivo.',
+          );
+        }
+      }
+
+      throw error;
+    }
   }
 
   findLowStock(tenantId: string) {
