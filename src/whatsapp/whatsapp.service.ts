@@ -64,17 +64,14 @@ export class WhatsAppService {
     };
 
     try {
-      const res = await fetch(
-        `https://graph.facebook.com/v21.0/${this.phoneNumberId}/messages`,
-        {
-          method: 'POST',
-          headers: {
-            Authorization: `Bearer ${this.apiToken}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(body),
+      const res = await fetch(`https://graph.facebook.com/v21.0/${this.phoneNumberId}/messages`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${this.apiToken}`,
+          'Content-Type': 'application/json',
         },
-      );
+        body: JSON.stringify(body),
+      });
 
       if (!res.ok) {
         const err = await res.text();

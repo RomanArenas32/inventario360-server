@@ -54,10 +54,9 @@ export class ProductsService {
 
     const updated = await this.productRepository.update(id, dto);
 
-    // Alerta de stock bajo — solo si el stock cambió y quedó en o bajo el mínimo
-    if (dto.stock !== undefined) {
-      const newMinStock = dto.minStock ?? product.minStock;
-      if (newMinStock > 0 && updated.stock <= newMinStock) {
+    // Alerta de stock bajo — solo si cambió el minStock y el stock actual quedó en o bajo el nuevo mínimo
+    if (dto.minStock !== undefined) {
+      if (dto.minStock > 0 && updated.stock <= dto.minStock) {
         void this.notificationSettings.notifyLowStock(tenantId, updated);
       }
     }
