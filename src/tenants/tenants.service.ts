@@ -50,8 +50,8 @@ export class TenantsService {
 
   // ── Member management ─────────────────────────────────────────────────────
 
-  async getMembers(tenantId: string) {
-    const memberships = await this.membershipsService.findByTenantId(tenantId);
+  async getMembers(tenantId: string, filters: { search?: string; role?: TenantRole } = {}) {
+    const memberships = await this.membershipsService.findByTenantId(tenantId, filters);
     return memberships.map(({ user, role, isActive, createdAt, id, userId }) => ({
       membershipId: id,
       userId,

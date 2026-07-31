@@ -17,8 +17,31 @@ export class CategoryRepository {
     return this.repo.save(category);
   }
 
-  findAll(tenantId: string): Promise<Category[]> {
-    return this.repo.find({ where: { tenantId }, order: { name: 'ASC' } });
+  findAll(
+    tenantId: string,
+    filters: { search?: string; hasDescription?: boolean } = {},
+  ): Promise<Category[]> {
+    const qb = this.repo
+      .createQueryBuilder('category')
+      .where('category.tenantId = :tenantId', { tenantId })
+      .orderBy('category.name', 'ASC');
+
+    if (filters.search) {
+      qb.andWhere('LOWER(category.name) LIKE :search', {
+        search: `%${filters.search.toLowerCase()}%`,
+      });
+    }
+    if (filters.hasDescription === true) {
+      qb.andWhere('category.description IS NOT NULL AND category.description != :empty', {
+        empty: '',
+      });
+    } else if (filters.hasDescription === false) {
+      qb.andWhere('(category.description IS NULL OR category.description = :empty)', {
+        empty: '',
+      });
+    }
+
+    return qb.getMany();
   }
 
   findOne(id: string, tenantId: string): Promise<Category | null> {

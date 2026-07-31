@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post, Query } from '@nestjs/common';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { RoleG } from '../common/decorators/role-guard.decorator';
 import { TenantRole } from '../common/enums/tenant-role.enum';
@@ -18,8 +18,19 @@ export class ProductsController {
   }
 
   @Get()
-  findAll(@CurrentUser() user: RequestUser) {
-    return this.productsService.findAll(user.activeTenantId!);
+  findAll(
+    @CurrentUser() user: RequestUser,
+    @Query('search') search?: string,
+    @Query('categoryId') categoryId?: string,
+    @Query('isActive') isActive?: string,
+    @Query('stock') stock?: 'low' | 'ok',
+  ) {
+    return this.productsService.findAll(user.activeTenantId!, {
+      search,
+      categoryId,
+      isActive: isActive === undefined ? undefined : isActive === 'true',
+      stock,
+    });
   }
 
   @Get('low-stock')
