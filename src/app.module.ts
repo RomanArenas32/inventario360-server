@@ -6,6 +6,8 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { AdminModule } from './admin/admin.module';
 import { AuthModule } from './auth/auth.module';
 import { MessagesModule } from './messages/messages.module';
+import { NotificationSettingsModule } from './notification-settings/notification-settings.module';
+import { WhatsAppModule } from './whatsapp/whatsapp.module';
 import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
 import { CategoriesModule } from './categories/categories.module';
 import { CommonModule } from './common/common.module';
@@ -42,6 +44,8 @@ import { UsersModule } from './users/users.module';
     AdminModule,
     AuthModule,
     MessagesModule,
+    NotificationSettingsModule,
+    WhatsAppModule,
     CategoriesModule,
     CommonModule,
     InvitationsModule,
