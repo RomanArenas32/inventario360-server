@@ -16,6 +16,7 @@ import { InvitationsModule } from './invitations/invitations.module';
 import { MailModule } from './mail/mail.module';
 import { PlatformAdminModule } from './platform-admin/platform-admin.module';
 import { ProductsModule } from './products/products.module';
+import { StockMovementsModule } from './stock-movements/stock-movements.module';
 import { TenantMembershipsModule } from './tenant-memberships/tenant-memberships.module';
 import { TenantsModule } from './tenants/tenants.module';
 import { UsersModule } from './users/users.module';
@@ -51,6 +52,7 @@ import { UsersModule } from './users/users.module';
     MailModule,
     PlatformAdminModule,
     ProductsModule,
+    StockMovementsModule,
     TenantMembershipsModule,
     UsersModule,
     TenantsModule,
