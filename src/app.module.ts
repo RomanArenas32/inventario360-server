@@ -7,6 +7,7 @@ import { AdminModule } from './admin/admin.module';
 import { AuthModule } from './auth/auth.module';
 import { MessagesModule } from './messages/messages.module';
 import { NotificationSettingsModule } from './notification-settings/notification-settings.module';
+import { NotificationsModule } from './notifications/notifications.module';
 import { WhatsAppModule } from './whatsapp/whatsapp.module';
 import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
 import { CategoriesModule } from './categories/categories.module';
@@ -45,6 +46,7 @@ import { UsersModule } from './users/users.module';
     AuthModule,
     MessagesModule,
     NotificationSettingsModule,
+    NotificationsModule,
     WhatsAppModule,
     CategoriesModule,
     CommonModule,
