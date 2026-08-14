@@ -6,4 +6,5 @@ export enum BusinessType {
   Restaurante = 'restaurante',
   TiendaRopa = 'tienda_ropa',
   TiendaElectronica = 'tienda_electronica',
+  Otro = 'otro',
 }

@@ -1,7 +1,9 @@
 import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { DataSource } from 'typeorm';
 import { StockMovementType } from '../common/enums/stock-movement-type.enum';
+import { NotificationType } from '../common/enums/notification-type.enum';
 import { NotificationSettingsService } from '../notification-settings/notification-settings.service';
+import { NotificationsService } from '../notifications/notifications.service';
 import { Product } from '../products/entities/product.entity';
 import { CreateStockMovementDto } from './dto/create-stock-movement.dto';
 import { StockMovementQueryDto } from './dto/stock-movement-query.dto';
@@ -14,6 +16,7 @@ export class StockMovementsService {
     private readonly dataSource: DataSource,
     private readonly stockMovementRepository: StockMovementRepository,
     private readonly notificationSettings: NotificationSettingsService,
+    private readonly notifications: NotificationsService,
   ) {}
 
   async create(dto: CreateStockMovementDto, tenantId: string, userId: string) {
@@ -97,8 +100,20 @@ export class StockMovementsService {
         .notifyLowStock(tenantId, result.product)
         .catch((error: unknown) => {
           const message = error instanceof Error ? error.message : 'Error desconocido';
-
           this.logger.error(`No se pudo procesar la alerta de stock bajo: ${message}`);
+        });
+
+      void this.notifications
+        .create(
+          tenantId,
+          NotificationType.LowStock,
+          'Stock bajo',
+          `"${result.product.name}" tiene ${result.product.stock} unidades (mínimo: ${result.product.minStock})`,
+          { productId: result.product.id },
+        )
+        .catch((error: unknown) => {
+          const message = error instanceof Error ? error.message : 'Error desconocido';
+          this.logger.error(`No se pudo crear notificación de stock bajo: ${message}`);
         });
     }
     return result.movement;

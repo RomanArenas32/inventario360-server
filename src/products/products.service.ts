@@ -1,5 +1,7 @@
 import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { NotificationSettingsService } from '../notification-settings/notification-settings.service';
+import { NotificationType } from '../common/enums/notification-type.enum';
+import { NotificationsService } from '../notifications/notifications.service';
 import { QueryFailedError } from 'typeorm';
 import { CategoriesService } from '../categories/categories.service';
 import type { CreateProductDto } from './dto/create-product.dto';
@@ -12,6 +14,7 @@ export class ProductsService {
     private readonly productRepository: ProductRepository,
     private readonly categoriesService: CategoriesService,
     private readonly notificationSettings: NotificationSettingsService,
+    private readonly notifications: NotificationsService,
   ) {}
 
   async create(dto: CreateProductDto, tenantId: string) {
@@ -66,6 +69,13 @@ export class ProductsService {
     if (dto.minStock !== undefined) {
       if (dto.minStock > 0 && updated.stock <= dto.minStock) {
         void this.notificationSettings.notifyLowStock(tenantId, updated);
+        void this.notifications.create(
+          tenantId,
+          NotificationType.LowStock,
+          'Stock bajo',
+          `"${updated.name}" tiene ${updated.stock} unidades (mínimo: ${updated.minStock})`,
+          { productId: updated.id },
+        );
       }
     }
 
