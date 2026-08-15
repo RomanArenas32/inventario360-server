@@ -46,6 +46,10 @@ export class UsersService {
     await this.userRepository.update(id, { password: hashed });
   }
 
+  savePushToken(id: string, token: string | null) {
+    return this.userRepository.update(id, { expoPushToken: token });
+  }
+
   deactivate(id: string) {
     return this.userRepository.update(id, { isActive: false });
   }

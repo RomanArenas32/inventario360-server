@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Post, Query, Res } from '@nestjs/common';
+import { Body, Controller, Get, Post, Query, Res, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Throttle } from '@nestjs/throttler';
 import type { Response } from 'express';
@@ -26,7 +26,7 @@ export class AuthController {
   @Throttle({ global: { ttl: 60_000, limit: 5 } })
   @Post('login')
   async login(@Body() dto: LoginDto, @Res({ passthrough: true }) res: Response) {
-    const { access_token } = await this.authService.login(dto);
+    const { access_token, memberships } = await this.authService.login(dto);
     res.cookie(COOKIE_NAME, access_token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
@@ -34,7 +34,8 @@ export class AuthController {
       maxAge: COOKIE_MAX_AGE,
       path: '/',
     });
-    return { ok: true };
+    // access_token incluido para clientes mobile (no pueden leer cookies httpOnly)
+    return { ok: true, access_token, memberships };
   }
 
   @Public()
@@ -58,7 +59,8 @@ export class AuthController {
       maxAge: COOKIE_MAX_AGE,
       path: '/',
     });
-    return { ok: true };
+    // access_token incluido para clientes mobile
+    return { ok: true, access_token };
   }
 
   @Get('me')
@@ -186,5 +188,45 @@ export class AuthController {
       }
       return errorRedirect('google_failed');
     }
+  }
+
+  // ── Google OAuth — Mobile (expo-auth-session) ──────────────────────────────
+
+  @Public()
+  @Throttle({ global: { ttl: 60_000, limit: 10 } })
+  @Post('google/mobile')
+  async googleMobileLogin(@Body() body: { accessToken: string }) {
+    if (!body.accessToken) {
+      throw new UnauthorizedException('Token de Google requerido');
+    }
+
+    // Exchange accessToken → user profile
+    const profileRes = await fetch('https://www.googleapis.com/userinfo/v2/me', {
+      headers: { Authorization: `Bearer ${body.accessToken}` },
+    });
+
+    if (!profileRes.ok) {
+      throw new UnauthorizedException('Token de Google inválido');
+    }
+
+    const profile = (await profileRes.json()) as {
+      email?: string;
+      picture?: string;
+      name?: string;
+    };
+
+    if (!profile.email) {
+      throw new UnauthorizedException('No se pudo obtener el email de Google');
+    }
+
+    const { access_token, memberships, userId } = await this.authService.loginByEmail(
+      profile.email,
+    );
+
+    if (profile.picture && userId) {
+      void this.authService.saveAvatar(userId, profile.picture);
+    }
+
+    return { ok: true, access_token, memberships };
   }
 }

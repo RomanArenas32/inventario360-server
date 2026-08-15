@@ -1,7 +1,8 @@
-import { Body, Controller, Patch } from '@nestjs/common';
+import { Body, Controller, HttpCode, Patch, Post } from '@nestjs/common';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import type { RequestUser } from '../common/types/request-user.type';
 import { ChangePasswordDto } from './dto/change-password.dto';
+import { SavePushTokenDto } from './dto/save-push-token.dto';
 import { UpdateProfileDto } from './dto/update-profile.dto';
 import { UsersService } from './users.service';
 
@@ -18,5 +19,11 @@ export class UsersController {
   async changePassword(@CurrentUser() user: RequestUser, @Body() dto: ChangePasswordDto) {
     await this.usersService.changePassword(user.id, dto.currentPassword, dto.newPassword);
     return { ok: true };
+  }
+
+  @Post('me/push-token')
+  @HttpCode(204)
+  async savePushToken(@CurrentUser() user: RequestUser, @Body() dto: SavePushTokenDto) {
+    await this.usersService.savePushToken(user.id, dto.token);
   }
 }

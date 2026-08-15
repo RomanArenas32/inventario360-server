@@ -103,17 +103,22 @@ export class StockMovementsService {
           this.logger.error(`No se pudo procesar la alerta de stock bajo: ${message}`);
         });
 
+      const notifTitle = 'Stock bajo';
+      const notifBody = `"${result.product.name}" tiene ${result.product.stock} unidades (mínimo: ${result.product.minStock})`;
+      const notifData = { productId: result.product.id };
+
       void this.notifications
-        .create(
-          tenantId,
-          NotificationType.LowStock,
-          'Stock bajo',
-          `"${result.product.name}" tiene ${result.product.stock} unidades (mínimo: ${result.product.minStock})`,
-          { productId: result.product.id },
-        )
+        .create(tenantId, NotificationType.LowStock, notifTitle, notifBody, notifData)
         .catch((error: unknown) => {
           const message = error instanceof Error ? error.message : 'Error desconocido';
           this.logger.error(`No se pudo crear notificación de stock bajo: ${message}`);
+        });
+
+      void this.notifications
+        .sendPushToTenant(tenantId, notifTitle, notifBody, notifData)
+        .catch((error: unknown) => {
+          const message = error instanceof Error ? error.message : 'Error desconocido';
+          this.logger.error(`No se pudo enviar push de stock bajo: ${message}`);
         });
     }
     return result.movement;
