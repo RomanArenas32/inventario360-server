@@ -13,11 +13,14 @@ export class SaleItem {
   @ManyToOne(() => Sale, (sale) => sale.items, { onDelete: 'CASCADE' })
   sale: Sale;
 
-  @Column()
-  productId: string;
+  @Column({ type: 'varchar', nullable: true })
+  productId: string | null;
 
-  @ManyToOne(() => Product, { onDelete: 'RESTRICT' })
-  product: Product;
+  @ManyToOne(() => Product, { onDelete: 'RESTRICT', nullable: true, eager: false })
+  product: Product | null;
+
+  @Column({ type: 'varchar', nullable: true, length: 200 })
+  description: string | null;
 
   @Column({ type: 'int' })
   quantity: number;
@@ -27,4 +30,7 @@ export class SaleItem {
 
   @Column({ type: 'decimal', precision: 10, scale: 2, default: 0 })
   costPrice: number;
+
+  @Column({ type: 'int', default: 0 })
+  refundedQuantity: number;
 }

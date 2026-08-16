@@ -1,4 +1,4 @@
-import { Column, CreateDateColumn, Entity, ManyToOne, OneToMany, PrimaryGeneratedColumn } from 'typeorm';
+import { Column, Entity, ManyToOne, OneToMany, PrimaryGeneratedColumn } from 'typeorm';
 import { PaymentMethod } from '../../common/enums/payment-method.enum';
 import { Tenant } from '../../tenants/entities/tenant.entity';
 import { User } from '../../users/entities/user.entity';
@@ -39,9 +39,15 @@ export class Sale {
   @ManyToOne(() => User, { onDelete: 'RESTRICT' })
   user: User;
 
+  @Column({ type: 'int', default: 0 })
+  saleNumber: number;
+
+  @Column({ type: 'decimal', precision: 10, scale: 2, default: 0 })
+  discount: number;
+
   @Column({ type: 'timestamp', nullable: true })
   refundedAt: Date | null;
 
-  @CreateDateColumn()
+  @Column({ type: 'timestamp', default: () => 'NOW()' })
   createdAt: Date;
 }

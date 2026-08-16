@@ -1,4 +1,4 @@
-import { Controller, Get, HttpCode, Param, Patch } from '@nestjs/common';
+import { Controller, Delete, Get, HttpCode, Param, Patch } from '@nestjs/common';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import type { RequestUser } from '../common/types/request-user.type';
 import { NotificationsService } from './notifications.service';
@@ -27,5 +27,11 @@ export class NotificationsController {
   @HttpCode(204)
   async markRead(@Param('id') id: string, @CurrentUser() user: RequestUser) {
     await this.service.markRead(id, user.activeTenantId!);
+  }
+
+  @Delete(':id')
+  @HttpCode(204)
+  async delete(@Param('id') id: string, @CurrentUser() user: RequestUser) {
+    await this.service.delete(id, user.activeTenantId!);
   }
 }

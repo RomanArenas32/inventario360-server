@@ -2,8 +2,34 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { DeepPartial, EntityManager, Repository } from 'typeorm';
 import type { PaginatedResult } from '../../common/dto/paginated-result';
-import { StockMovementQueryDto } from '../dto/stock-movement-query.dto';
+import { StockMovementQueryDto, type MovementPeriod } from '../dto/stock-movement-query.dto';
 import { StockMovement } from '../entities/stock-movement.entity';
+
+function getPeriodRange(period: MovementPeriod): { from: Date; to: Date } {
+  const now = new Date();
+  const startOfDay = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate(), 0, 0, 0, 0);
+  const endOfDay = (d: Date) =>
+    new Date(d.getFullYear(), d.getMonth(), d.getDate(), 23, 59, 59, 999);
+
+  if (period === 'today') {
+    return { from: startOfDay(now), to: endOfDay(now) };
+  }
+  if (period === 'yesterday') {
+    const y = new Date(now);
+    y.setDate(y.getDate() - 1);
+    return { from: startOfDay(y), to: endOfDay(y) };
+  }
+  if (period === 'week') {
+    const day = now.getDay(); // 0 = Sunday
+    const diff = day === 0 ? 6 : day - 1; // Mon = start
+    const from = new Date(now);
+    from.setDate(from.getDate() - diff);
+    return { from: startOfDay(from), to: endOfDay(now) };
+  }
+  // month
+  const from = new Date(now.getFullYear(), now.getMonth(), 1);
+  return { from, to: endOfDay(now) };
+}
 
 @Injectable()
 export class StockMovementRepository {
@@ -17,6 +43,15 @@ export class StockMovementRepository {
 
     const movement = repository.create(data);
     return repository.save(movement);
+  }
+
+  async findAllRecent(tenantId: string, limit = 5): Promise<StockMovement[]> {
+    return this.repo.find({
+      where: { tenantId },
+      relations: { product: true, user: true },
+      order: { createdAt: 'DESC' },
+      take: limit,
+    });
   }
 
   async findAll(
@@ -49,9 +84,14 @@ export class StockMovementRepository {
 
     if (query.search) {
       queryBuilder.andWhere(
-        '(LOWER(product.name) LIKE :search OR LOWER(product.code) LIKE :search)',
+        "(LOWER(product.name) LIKE :search OR LOWER(product.code) LIKE :search OR LOWER(COALESCE(movement.reason, '')) LIKE :search OR LOWER(user.name) LIKE :search)",
         { search: `%${query.search.toLowerCase()}%` },
       );
+    }
+
+    if (query.period) {
+      const { from, to } = getPeriodRange(query.period);
+      queryBuilder.andWhere('movement.createdAt BETWEEN :from AND :to', { from, to });
     }
 
     queryBuilder.orderBy(`movement.${sortBy}`, sortOrder).skip(offset).take(limit);

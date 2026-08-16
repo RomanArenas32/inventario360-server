@@ -123,11 +123,20 @@ export class TenantsService {
 
   async getSettings(tenantId: string) {
     const tenant = await this.tenantRepository.findByIdOrFail(tenantId);
-    return { name: tenant.name, businessType: tenant.businessType, staffModules: tenant.staffModules };
+    return {
+      name: tenant.name,
+      businessType: tenant.businessType,
+      staffModules: tenant.staffModules,
+    };
   }
 
   async updateBusinessType(tenantId: string, businessType: string) {
     await this.tenantRepository.update(tenantId, { businessType: businessType as never });
+    return { ok: true };
+  }
+
+  async updateName(tenantId: string, name: string) {
+    await this.tenantRepository.update(tenantId, { name: name.trim() });
     return { ok: true };
   }
 

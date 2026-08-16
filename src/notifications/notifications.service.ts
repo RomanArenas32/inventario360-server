@@ -42,6 +42,10 @@ export class NotificationsService {
     await this.repo.markAllRead(tenantId);
   }
 
+  async delete(id: string, tenantId: string) {
+    await this.repo.delete(id, tenantId);
+  }
+
   /**
    * Sends an Expo push notification to all active members of a tenant that have a registered token.
    * Fire-and-forget — errors are logged, never thrown.

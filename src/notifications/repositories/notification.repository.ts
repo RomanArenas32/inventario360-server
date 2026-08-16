@@ -38,4 +38,8 @@ export class NotificationRepository {
   async markAllRead(tenantId: string): Promise<void> {
     await this.repo.update({ tenantId, read: false }, { read: true });
   }
+
+  async delete(id: string, tenantId: string): Promise<void> {
+    await this.repo.delete({ id, tenantId });
+  }
 }

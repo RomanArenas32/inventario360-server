@@ -1,4 +1,5 @@
 import {
+  IsEnum,
   IsInt,
   IsISO8601,
   IsNumber,
@@ -8,17 +9,20 @@ import {
   Max,
   Min,
 } from 'class-validator';
+import { TurnStatus } from '../../common/enums/turn-status.enum';
 
-export class CreateTurnDto {
+export class UpdateTurnDto {
+  @IsOptional()
   @IsString()
-  clientName: string;
+  clientName?: string;
 
   @IsOptional()
   @IsString()
   clientPhone?: string | null;
 
+  @IsOptional()
   @IsString()
-  service: string;
+  service?: string;
 
   @IsOptional()
   @IsISO8601()
@@ -28,10 +32,11 @@ export class CreateTurnDto {
   @IsString()
   date?: string;
 
+  @IsOptional()
   @IsInt()
   @Min(5)
   @Max(480)
-  duration: number;
+  duration?: number;
 
   @IsOptional()
   @IsString()
@@ -45,4 +50,8 @@ export class CreateTurnDto {
   @IsNumber()
   @Min(0)
   price?: number | null;
+
+  @IsOptional()
+  @IsEnum(TurnStatus)
+  status?: TurnStatus;
 }

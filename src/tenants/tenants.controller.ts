@@ -75,8 +75,16 @@ export class TenantsController {
 
   @Patch('settings')
   @RoleG(TenantRole.Owner)
-  updateSettings(@CurrentUser() user: RequestUser, @Body() body: { businessType: string }) {
-    return this.tenantsService.updateBusinessType(user.activeTenantId!, body.businessType);
+  async updateSettings(
+    @CurrentUser() user: RequestUser,
+    @Body() body: { businessType?: string; name?: string },
+  ) {
+    const tasks: Promise<unknown>[] = [];
+    if (body.businessType)
+      tasks.push(this.tenantsService.updateBusinessType(user.activeTenantId!, body.businessType));
+    if (body.name) tasks.push(this.tenantsService.updateName(user.activeTenantId!, body.name));
+    await Promise.all(tasks);
+    return { ok: true };
   }
 
   @Patch('staff-modules')

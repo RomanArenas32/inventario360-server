@@ -28,6 +28,9 @@ export class Turn {
   @Column({ type: 'int', default: 30 })
   duration: number;
 
+  @Column({ type: 'decimal', precision: 10, scale: 2, nullable: true })
+  price: number | null;
+
   @Column({ type: 'enum', enum: TurnStatus, default: TurnStatus.Pending })
   status: TurnStatus;
 

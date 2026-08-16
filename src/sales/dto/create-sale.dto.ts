@@ -4,17 +4,32 @@ import {
   IsArray,
   IsEnum,
   IsInt,
+  IsISO8601,
+  IsNumber,
   IsOptional,
   IsString,
   IsUUID,
+  Max,
+  MaxLength,
   Min,
   ValidateNested,
 } from 'class-validator';
 import { PaymentMethod } from '../../common/enums/payment-method.enum';
 
 export class SaleItemDto {
+  @IsOptional()
   @IsUUID()
-  productId: string;
+  productId?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(200)
+  description?: string;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  unitPrice?: number;
 
   @IsInt()
   @Min(1)
@@ -34,4 +49,14 @@ export class CreateSaleDto {
   @IsOptional()
   @IsString()
   notes?: string;
+
+  @IsOptional()
+  @IsISO8601()
+  customDate?: string;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  @Max(100)
+  discountPct?: number;
 }

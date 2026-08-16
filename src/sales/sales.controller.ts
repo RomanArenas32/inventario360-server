@@ -4,12 +4,13 @@ import { RoleG } from '../common/decorators/role-guard.decorator';
 import { TenantRole } from '../common/enums/tenant-role.enum';
 import type { RequestUser } from '../common/types/request-user.type';
 import { CreateSaleDto } from './dto/create-sale.dto';
+import { PartialRefundDto } from './dto/partial-refund.dto';
 import { SaleQueryDto } from './dto/sale-query.dto';
 import { SalesService } from './sales.service';
 import type { Period } from './repositories/sale.repository';
 
 @Controller('sales')
-@RoleG(TenantRole.Owner)
+@RoleG(TenantRole.Owner, TenantRole.Staff)
 export class SalesController {
   constructor(private readonly salesService: SalesService) {}
 
@@ -19,14 +20,13 @@ export class SalesController {
   }
 
   @Get('summary')
-  getSummary(
-    @CurrentUser() user: RequestUser,
-    @Query('period') period?: Period,
-  ) {
+  @RoleG(TenantRole.Owner)
+  getSummary(@CurrentUser() user: RequestUser, @Query('period') period?: Period) {
     return this.salesService.getSummary(user.activeTenantId!, period ?? 'today');
   }
 
   @Get('top-products')
+  @RoleG(TenantRole.Owner)
   getTopProducts(
     @CurrentUser() user: RequestUser,
     @Query('period') period?: Period,
@@ -36,6 +36,31 @@ export class SalesController {
       user.activeTenantId!,
       period ?? 'today',
       limit ? parseInt(limit, 10) : 5,
+    );
+  }
+
+  @Get('monthly-summary')
+  @RoleG(TenantRole.Owner)
+  getMonthlySummary(
+    @CurrentUser() user: RequestUser,
+    @Query('year') year?: string,
+    @Query('month') month?: string,
+  ) {
+    const now = new Date();
+    return this.salesService.getSummaryForMonth(
+      user.activeTenantId!,
+      year ? parseInt(year, 10) : now.getFullYear(),
+      month ? parseInt(month, 10) : now.getMonth() + 1,
+    );
+  }
+
+  @Get('monthly-chart')
+  @RoleG(TenantRole.Owner)
+  getMonthlyChart(@CurrentUser() user: RequestUser, @Query('year') year?: string) {
+    const now = new Date();
+    return this.salesService.getMonthlyChart(
+      user.activeTenantId!,
+      year ? parseInt(year, 10) : now.getFullYear(),
     );
   }
 
@@ -50,7 +75,18 @@ export class SalesController {
   }
 
   @Post(':id/refund')
+  @RoleG(TenantRole.Owner)
   refund(@Param('id') id: string, @CurrentUser() user: RequestUser) {
     return this.salesService.refund(id, user.activeTenantId!, user.id);
+  }
+
+  @Post(':id/partial-refund')
+  @RoleG(TenantRole.Owner)
+  partialRefund(
+    @Param('id') id: string,
+    @Body() dto: PartialRefundDto,
+    @CurrentUser() user: RequestUser,
+  ) {
+    return this.salesService.partialRefund(id, user.activeTenantId!, user.id, dto);
   }
 }
