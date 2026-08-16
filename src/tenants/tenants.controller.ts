@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, Put, Query } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post, Query } from '@nestjs/common';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { RoleG } from '../common/decorators/role-guard.decorator';
 import { TenantRole } from '../common/enums/tenant-role.enum';
@@ -73,9 +73,15 @@ export class TenantsController {
     return this.tenantsService.getSettings(user.activeTenantId!);
   }
 
-  @Put('settings')
+  @Patch('settings')
   @RoleG(TenantRole.Owner)
-  updateSettings(@CurrentUser() user: RequestUser, @Body() body: { staffModules: string[] }) {
-    return this.tenantsService.updateSettings(user.activeTenantId!, body.staffModules);
+  updateSettings(@CurrentUser() user: RequestUser, @Body() body: { businessType: string }) {
+    return this.tenantsService.updateBusinessType(user.activeTenantId!, body.businessType);
+  }
+
+  @Patch('staff-modules')
+  @RoleG(TenantRole.Owner)
+  updateStaffModules(@CurrentUser() user: RequestUser, @Body() body: { modules: string[] | null }) {
+    return this.tenantsService.updateStaffModules(user.activeTenantId!, body.modules);
   }
 }

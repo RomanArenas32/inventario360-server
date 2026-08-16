@@ -72,12 +72,18 @@ export class AuthController {
 
     const userRecord = await this.authService.getUser(user.id);
 
+    // Prefer live DB role over stale JWT value
+    const activeMembership = user.activeTenantId
+      ? memberships.find((m) => m.tenantId === user.activeTenantId)
+      : null;
+    const tenantRole = activeMembership?.role ?? user.tenantRole;
+
     return {
       id: user.id,
       name: user.name,
       email: user.email,
       role: user.globalRole,
-      tenantRole: user.tenantRole,
+      tenantRole,
       avatarUrl: userRecord?.avatarUrl ?? null,
       tenant: tenant
         ? {

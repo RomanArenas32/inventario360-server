@@ -44,9 +44,14 @@ export class StockMovementRepository {
     }
 
     if (query.type) {
-      queryBuilder.andWhere('movement.type = :type', {
-        type: query.type,
-      });
+      queryBuilder.andWhere('movement.type = :type', { type: query.type });
+    }
+
+    if (query.search) {
+      queryBuilder.andWhere(
+        '(LOWER(product.name) LIKE :search OR LOWER(product.code) LIKE :search)',
+        { search: `%${query.search.toLowerCase()}%` },
+      );
     }
 
     queryBuilder.orderBy(`movement.${sortBy}`, sortOrder).skip(offset).take(limit);

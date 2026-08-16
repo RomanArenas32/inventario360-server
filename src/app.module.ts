@@ -17,9 +17,11 @@ import { InvitationsModule } from './invitations/invitations.module';
 import { MailModule } from './mail/mail.module';
 import { PlatformAdminModule } from './platform-admin/platform-admin.module';
 import { ProductsModule } from './products/products.module';
+import { SalesModule } from './sales/sales.module';
 import { StockMovementsModule } from './stock-movements/stock-movements.module';
 import { TenantMembershipsModule } from './tenant-memberships/tenant-memberships.module';
 import { TenantsModule } from './tenants/tenants.module';
+import { TurnsModule } from './turns/turns.module';
 import { UsersModule } from './users/users.module';
 
 @Module({
@@ -54,8 +56,10 @@ import { UsersModule } from './users/users.module';
     MailModule,
     PlatformAdminModule,
     ProductsModule,
+    SalesModule,
     StockMovementsModule,
     TenantMembershipsModule,
+    TurnsModule,
     UsersModule,
     TenantsModule,
   ],
