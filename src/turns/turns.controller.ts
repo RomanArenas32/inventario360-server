@@ -45,6 +45,6 @@ export class TurnsController {
 
   @Patch(':id')
   update(@Param('id') id: string, @Body() dto: UpdateTurnDto, @CurrentUser() user: RequestUser) {
-    return this.turnsService.update(id, user.activeTenantId!, dto);
+    return this.turnsService.update(id, user.activeTenantId!, dto, user.id);
   }
 }

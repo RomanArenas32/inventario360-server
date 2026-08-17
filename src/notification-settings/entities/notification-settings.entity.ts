@@ -17,6 +17,12 @@ export class NotificationSettings {
   @Column({ default: true })
   alertLowStock: boolean;
 
+  @Column({ default: true })
+  alertNewSale: boolean;
+
+  @Column({ default: true })
+  alertTurnAssigned: boolean;
+
   @UpdateDateColumn()
   updatedAt: Date;
 }

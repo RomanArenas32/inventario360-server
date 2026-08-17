@@ -1,11 +1,20 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
+import { NotificationType } from '../common/enums/notification-type.enum';
+import { NotificationSettingsService } from '../notification-settings/notification-settings.service';
+import { NotificationsService } from '../notifications/notifications.service';
 import { CreateTurnDto } from './dto/create-turn.dto';
 import { UpdateTurnDto } from './dto/update-turn.dto';
 import { TurnRepository } from './repositories/turn.repository';
 
 @Injectable()
 export class TurnsService {
-  constructor(private readonly turnRepository: TurnRepository) {}
+  private readonly logger = new Logger(TurnsService.name);
+
+  constructor(
+    private readonly turnRepository: TurnRepository,
+    private readonly notificationSettings: NotificationSettingsService,
+    private readonly notifications: NotificationsService,
+  ) {}
 
   findByDate(tenantId: string, date: string) {
     return this.turnRepository.findByDate(tenantId, date);
@@ -19,7 +28,7 @@ export class TurnsService {
     return this.turnRepository.findHistory(tenantId, search, limit, offset);
   }
 
-  create(dto: CreateTurnDto, tenantId: string, userId: string) {
+  async create(dto: CreateTurnDto, tenantId: string, userId: string) {
     let date: string;
     if (dto.startTime) {
       date = dto.startTime.split('T')[0]!;
@@ -29,7 +38,9 @@ export class TurnsService {
       date = new Date().toISOString().split('T')[0]!;
     }
 
-    return this.turnRepository.save({
+    const assignedUserId = dto.assignedUserId ?? userId;
+
+    const turn = await this.turnRepository.save({
       clientName: dto.clientName.trim(),
       clientPhone: dto.clientPhone?.trim() || undefined,
       service: dto.service.trim(),
@@ -39,11 +50,23 @@ export class TurnsService {
       notes: dto.notes?.trim() || undefined,
       price: dto.price ?? null,
       tenantId,
-      assignedUserId: dto.assignedUserId ?? userId,
+      assignedUserId,
     });
+
+    // Notify assigned user if someone else created this turn for them
+    if (assignedUserId !== userId) {
+      void this.fireTurnAssigned(
+        tenantId,
+        assignedUserId,
+        dto.clientName.trim(),
+        dto.service.trim(),
+      );
+    }
+
+    return turn;
   }
 
-  update(id: string, tenantId: string, dto: UpdateTurnDto) {
+  async update(id: string, tenantId: string, dto: UpdateTurnDto, actorUserId?: string) {
     let date: string | undefined;
     if (dto.startTime !== undefined) {
       date = dto.startTime ? dto.startTime.split('T')[0] : dto.date;
@@ -64,6 +87,44 @@ export class TurnsService {
     if (dto.price !== undefined) patch.price = dto.price;
     if (dto.status !== undefined) patch.status = dto.status;
 
-    return this.turnRepository.update(id, tenantId, patch);
+    const turn = await this.turnRepository.update(id, tenantId, patch);
+
+    // Notify the newly assigned user if someone else re-assigned this turn
+    if (
+      dto.assignedUserId !== undefined &&
+      dto.assignedUserId !== null &&
+      actorUserId !== undefined &&
+      dto.assignedUserId !== actorUserId
+    ) {
+      const clientName = (dto.clientName ?? turn.clientName).trim();
+      const service = (dto.service ?? turn.service).trim();
+      void this.fireTurnAssigned(tenantId, dto.assignedUserId, clientName, service);
+    }
+
+    return turn;
+  }
+
+  // ── Private helpers ─────────────────────────────────────────────────────────
+
+  private async fireTurnAssigned(
+    tenantId: string,
+    assignedUserId: string,
+    clientName: string,
+    service: string,
+  ): Promise<void> {
+    try {
+      const settings = await this.notificationSettings.getSettings(tenantId);
+      if (!settings?.alertTurnAssigned) return;
+      const title = 'Turno asignado';
+      const body = `${clientName} — ${service}`;
+      void this.notifications
+        .create(tenantId, NotificationType.TurnAssigned, title, body, { assignedUserId })
+        .catch((err: unknown) => this.logger.error(`create turn notification: ${String(err)}`));
+      void this.notifications
+        .sendPushToUser(tenantId, assignedUserId, title, body)
+        .catch((err: unknown) => this.logger.error(`push turn assigned: ${String(err)}`));
+    } catch (err) {
+      this.logger.error(`fireTurnAssigned: ${String(err)}`);
+    }
   }
 }

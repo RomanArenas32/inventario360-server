@@ -12,4 +12,12 @@ export class UpsertNotificationSettingsDto {
   @IsOptional()
   @IsBoolean()
   alertLowStock?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  alertNewSale?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  alertTurnAssigned?: boolean;
 }

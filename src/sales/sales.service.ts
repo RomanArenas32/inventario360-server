@@ -1,6 +1,9 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { DataSource } from 'typeorm';
+import { NotificationType } from '../common/enums/notification-type.enum';
 import { StockMovementType } from '../common/enums/stock-movement-type.enum';
+import { NotificationSettingsService } from '../notification-settings/notification-settings.service';
+import { NotificationsService } from '../notifications/notifications.service';
 import { Product } from '../products/entities/product.entity';
 import { StockMovement } from '../stock-movements/entities/stock-movement.entity';
 import { CreateSaleDto } from './dto/create-sale.dto';
@@ -12,13 +15,17 @@ import { SaleRepository, type Period } from './repositories/sale.repository';
 
 @Injectable()
 export class SalesService {
+  private readonly logger = new Logger(SalesService.name);
+
   constructor(
     private readonly dataSource: DataSource,
     private readonly saleRepository: SaleRepository,
+    private readonly notificationSettings: NotificationSettingsService,
+    private readonly notifications: NotificationsService,
   ) {}
 
   async create(dto: CreateSaleDto, tenantId: string, userId: string): Promise<Sale> {
-    return this.dataSource.transaction(async (manager) => {
+    const result = await this.dataSource.transaction(async (manager) => {
       const productRepo = manager.getRepository(Product);
       const saleRepo = manager.getRepository(Sale);
       const saleItemRepo = manager.getRepository(SaleItem);
@@ -167,6 +174,32 @@ export class SalesService {
         relations: { items: { product: true }, user: true },
       });
     });
+
+    void this.fireNewSaleNotification(tenantId, userId, result);
+
+    return result;
+  }
+
+  private async fireNewSaleNotification(
+    tenantId: string,
+    userId: string,
+    sale: Sale,
+  ): Promise<void> {
+    try {
+      const settings = await this.notificationSettings.getSettings(tenantId);
+      if (!settings?.alertNewSale) return;
+      const total = `$${Math.round(Number(sale.total)).toLocaleString('es-AR')}`;
+      const title = 'Nueva venta registrada';
+      const body = `${total} · ${sale.itemCount} ítem${sale.itemCount !== 1 ? 's' : ''}`;
+      void this.notifications
+        .create(tenantId, NotificationType.NewSale, title, body, { saleId: sale.id })
+        .catch((err: unknown) => this.logger.error(`create sale notification: ${String(err)}`));
+      void this.notifications
+        .sendPushToTenantExcept(tenantId, userId, title, body, { saleId: sale.id })
+        .catch((err: unknown) => this.logger.error(`push new sale: ${String(err)}`));
+    } catch (err) {
+      this.logger.error(`fireNewSaleNotification: ${String(err)}`);
+    }
   }
 
   findAll(tenantId: string, query: SaleQueryDto) {
