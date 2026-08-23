@@ -16,7 +16,7 @@ export class TenantRepository {
   create(
     name: string,
     businessType?: BusinessType,
-    options: { phone?: string; plan?: Plan } = {},
+    options: { phone?: string; plan?: Plan; trialEndsAt?: Date | null } = {},
   ): Promise<Tenant> {
     const tenant = this.repo.create({ name, businessType, ...options });
     return this.repo.save(tenant);

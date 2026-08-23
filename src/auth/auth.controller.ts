@@ -225,14 +225,53 @@ export class AuthController {
       throw new UnauthorizedException('No se pudo obtener el email de Google');
     }
 
-    const { access_token, memberships, userId } = await this.authService.loginByEmail(
-      profile.email,
-    );
+    const user = await this.authService.findOrCreateByGoogle({
+      email: profile.email,
+      name: profile.name,
+      picture: profile.picture,
+    });
 
-    if (profile.picture && userId) {
-      void this.authService.saveAvatar(userId, profile.picture);
+    const memberships = await this.tenantMembershipsService.findByUserId(user.id);
+
+    let activeTenantId: string | null = null;
+    let tenantRole: string | null = null;
+    if (memberships.length === 1) {
+      activeTenantId = memberships[0].tenantId;
+      tenantRole = memberships[0].role;
     }
 
+    const access_token = this.authService.signToken({
+      sub: user.id,
+      email: user.email,
+      globalRole: user.globalRole,
+      activeTenantId,
+      tenantRole,
+    });
+
     return { ok: true, access_token, memberships };
+  }
+
+  // ── Self-registration: create tenant for new user ──────────────────────────
+
+  @Post('register-tenant')
+  async registerTenant(
+    @CurrentUser() user: RequestUser,
+    @Body() body: { name: string },
+  ) {
+    if (!body.name?.trim()) {
+      throw new UnauthorizedException('El nombre del negocio es requerido');
+    }
+
+    const tenant = await this.tenantsService.selfRegister(user.id, body.name.trim());
+
+    const access_token = this.authService.signToken({
+      sub: user.id,
+      email: user.email,
+      globalRole: user.globalRole,
+      activeTenantId: tenant.id,
+      tenantRole: 'owner',
+    });
+
+    return { ok: true, access_token };
   }
 }

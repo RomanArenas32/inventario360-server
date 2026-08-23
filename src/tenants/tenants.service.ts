@@ -28,6 +28,15 @@ export class TenantsService {
     return this.tenantRepository.create(...args);
   }
 
+  async selfRegister(userId: string, name: string) {
+    const trialEndsAt = new Date();
+    trialEndsAt.setDate(trialEndsAt.getDate() + 30);
+
+    const tenant = await this.tenantRepository.create(name, undefined, { trialEndsAt });
+    await this.membershipsService.create({ userId, tenantId: tenant.id, role: TenantRole.Owner });
+    return tenant;
+  }
+
   completeOnboarding(...args: Parameters<TenantRepository['completeOnboarding']>) {
     return this.tenantRepository.completeOnboarding(...args);
   }

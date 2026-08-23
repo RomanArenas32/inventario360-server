@@ -42,6 +42,21 @@ export class AuthService {
     return { access_token: token, memberships };
   }
 
+  async findOrCreateByGoogle(profile: { email: string; name?: string; picture?: string }) {
+    let user = await this.usersService.findByEmail(profile.email);
+    if (!user) {
+      user = await this.usersService.create({
+        email: profile.email,
+        name: profile.name ?? profile.email.split('@')[0] ?? 'Usuario',
+        avatarUrl: profile.picture ?? null,
+      });
+    } else {
+      if (!user.isActive) throw new UnauthorizedException('Usuario inactivo');
+      if (profile.picture) void this.usersService.upsertAvatar(user.id, profile.picture);
+    }
+    return user;
+  }
+
   async loginByEmail(email: string) {
     const user = await this.usersService.findByEmail(email);
     if (!user) throw new UnauthorizedException('No existe una cuenta con este email');
@@ -65,6 +80,16 @@ export class AuthService {
     });
 
     return { access_token: token, memberships, activeTenantId, userId: user.id };
+  }
+
+  signToken(payload: {
+    sub: string;
+    email: string;
+    globalRole?: string;
+    activeTenantId?: string | null;
+    tenantRole?: string | null;
+  }): string {
+    return this.jwtService.sign(payload);
   }
 
   async saveAvatar(userId: string, avatarUrl: string): Promise<void> {

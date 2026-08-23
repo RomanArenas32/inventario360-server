@@ -3,9 +3,10 @@ import { IsEnum, IsOptional, IsString, MaxLength } from 'class-validator';
 import { BusinessType } from '../../common/enums/business-type.enum';
 
 export class OnboardingDto {
-  @ApiProperty({ enum: BusinessType, enumName: 'BusinessType' })
+  @ApiPropertyOptional({ enum: BusinessType, enumName: 'BusinessType' })
+  @IsOptional()
   @IsEnum(BusinessType)
-  businessType: BusinessType;
+  businessType?: BusinessType;
 
   @ApiPropertyOptional()
   @IsOptional()
