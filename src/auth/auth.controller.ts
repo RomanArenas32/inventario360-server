@@ -145,21 +145,27 @@ export class AuthController {
       const profileRes = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
         headers: { Authorization: `Bearer ${access_token}` },
       });
-      const { email, picture } = (await profileRes.json()) as { email: string; picture?: string };
+      const { email, picture, name } = (await profileRes.json()) as { email: string; picture?: string; name?: string };
       if (!email) return errorRedirect('google_failed');
 
-      // Find user and build JWT
-      const {
-        access_token: jwtToken,
-        memberships,
-        activeTenantId,
-        userId,
-      } = await this.authService.loginByEmail(email);
+      // Find or create user (open registration)
+      const user = await this.authService.findOrCreateByGoogle({ email, name, picture });
+      const memberships = await this.tenantMembershipsService.findByUserId(user.id);
 
-      // Save Google avatar (best-effort)
-      if (picture && userId) {
-        void this.authService.saveAvatar(userId, picture);
+      let activeTenantId: string | null = null;
+      let tenantRole: string | null = null;
+      if (memberships.length === 1) {
+        activeTenantId = memberships[0].tenantId;
+        tenantRole = memberships[0].role;
       }
+
+      const jwtToken = this.authService.signToken({
+        sub: user.id,
+        email: user.email,
+        globalRole: user.globalRole,
+        activeTenantId,
+        tenantRole,
+      });
 
       const isProd = process.env.NODE_ENV === 'production';
       const clientCookieBase = {
@@ -171,10 +177,11 @@ export class AuthController {
       };
 
       res.cookie(COOKIE_NAME, jwtToken, { ...clientCookieBase, httpOnly: true });
-      res.cookie('inv360_role', 'user', clientCookieBase);
+      res.cookie('inv360_role', user.globalRole, clientCookieBase);
 
       if (memberships.length === 0) {
-        return errorRedirect('no_tenant');
+        // New user with no tenant — redirect to open registration
+        return res.redirect(`${frontendUrl}/register`);
       }
 
       if (memberships.length > 1 || !activeTenantId) {
@@ -257,6 +264,7 @@ export class AuthController {
   async registerTenant(
     @CurrentUser() user: RequestUser,
     @Body() body: { name: string },
+    @Res({ passthrough: true }) res: Response,
   ) {
     if (!body.name?.trim()) {
       throw new UnauthorizedException('El nombre del negocio es requerido');
@@ -270,6 +278,15 @@ export class AuthController {
       globalRole: user.globalRole,
       activeTenantId: tenant.id,
       tenantRole: 'owner',
+    });
+
+    // Set updated token as httpOnly cookie for web clients
+    res.cookie(COOKIE_NAME, access_token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      maxAge: COOKIE_MAX_AGE,
+      path: '/',
     });
 
     return { ok: true, access_token };
