@@ -1,6 +1,7 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post, Query } from '@nestjs/common';
 import { RoleG } from '../common/decorators/role-guard.decorator';
 import { Role } from '../common/enums/role.enum';
+import { Plan } from '../common/enums/plan.enum';
 import { AdminService } from './admin.service';
 import { CreateTenantDto } from './dto/create-tenant.dto';
 import { UpdateTenantDto } from './dto/update-tenant.dto';
@@ -16,8 +17,16 @@ export class AdminController {
   }
 
   @Get('tenants')
-  findAllTenants() {
-    return this.adminService.findAllTenants();
+  findAllTenants(
+    @Query('search') search?: string,
+    @Query('plan') plan?: Plan,
+    @Query('isActive') isActive?: string,
+  ) {
+    return this.adminService.findAllTenants({
+      search,
+      plan,
+      isActive: isActive === undefined ? undefined : isActive === 'true',
+    });
   }
 
   @Patch('tenants/:id')

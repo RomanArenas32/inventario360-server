@@ -23,12 +23,24 @@ async function createAdmin() {
   const email = process.env.ADMIN_EMAIL ?? 'admin@inventario360.com';
   const password = process.env.ADMIN_PASSWORD ?? 'admin123';
   const name = process.env.ADMIN_NAME ?? 'Administrador';
+  const shouldResetPassword = process.argv.includes('--reset-password');
 
   const repo = dataSource.getRepository(PlatformAdmin);
 
   const exists = await repo.findOne({ where: { email } });
   if (exists) {
-    console.log(`El admin de plataforma ya existe: ${email}`);
+    if (!shouldResetPassword) {
+      console.log(`El admin de plataforma ya existe: ${email}`);
+      await dataSource.destroy();
+      return;
+    }
+
+    exists.password = await bcrypt.hash(password, 10);
+    exists.isActive = true;
+
+    await repo.save(exists);
+
+    console.log(`Contraseña restablecida para: ${email}`);
     await dataSource.destroy();
     return;
   }

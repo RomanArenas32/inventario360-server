@@ -54,6 +54,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     }
 
     const user = await this.usersService.findById(payload.sub);
+    console.log('[JWT] sub:', payload.sub, '→ user:', user ? `found (active=${user.isActive})` : 'NOT FOUND');
     if (!user || !user.isActive) throw new UnauthorizedException();
 
     if (payload.activeTenantId) {
@@ -61,6 +62,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
         payload.sub,
         payload.activeTenantId,
       );
+      console.log('[JWT] tenantId:', payload.activeTenantId, '→ membership:', membership ? `found (active=${membership.isActive})` : 'NOT FOUND');
       if (!membership || !membership.isActive) throw new UnauthorizedException();
     }
 

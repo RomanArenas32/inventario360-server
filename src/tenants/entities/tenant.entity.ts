@@ -32,6 +32,9 @@ export class Tenant {
   @OneToMany(() => TenantMembership, (m) => m.tenant)
   memberships: TenantMembership[];
 
+  @Column({ type: 'timestamptz', nullable: true, default: null })
+  trialEndsAt: Date | null;
+
   @CreateDateColumn()
   createdAt: Date;
 }

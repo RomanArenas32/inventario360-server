@@ -16,7 +16,7 @@ export class TenantRepository {
   create(
     name: string,
     businessType?: BusinessType,
-    options: { phone?: string; plan?: Plan } = {},
+    options: { phone?: string; plan?: Plan; trialEndsAt?: Date | null } = {},
   ): Promise<Tenant> {
     const tenant = this.repo.create({ name, businessType, ...options });
     return this.repo.save(tenant);
@@ -34,11 +34,27 @@ export class TenantRepository {
     return this.repo.findOneOrFail({ where: { id: tenantId } });
   }
 
-  async findAll() {
-    const tenants = await this.repo.find({
-      order: { createdAt: 'DESC' },
-      relations: { memberships: { user: true } },
-    });
+  async findAll(filters: { search?: string; plan?: Plan; isActive?: boolean } = {}) {
+    const qb = this.repo
+      .createQueryBuilder('tenant')
+      .leftJoinAndSelect('tenant.memberships', 'membership')
+      .leftJoinAndSelect('membership.user', 'user')
+      .orderBy('tenant.createdAt', 'DESC');
+
+    if (filters.search) {
+      qb.andWhere(
+        '(LOWER(tenant.name) LIKE :search OR LOWER(user.name) LIKE :search OR LOWER(user.email) LIKE :search)',
+        { search: `%${filters.search.toLowerCase()}%` },
+      );
+    }
+    if (filters.plan) {
+      qb.andWhere('tenant.plan = :plan', { plan: filters.plan });
+    }
+    if (filters.isActive !== undefined) {
+      qb.andWhere('tenant.isActive = :isActive', { isActive: filters.isActive });
+    }
+
+    const tenants = await qb.getMany();
     return tenants.map((t) => {
       const ownerMembership = t.memberships?.find((m) => m.role === TenantRole.Owner);
       const { memberships: _m, ...rest } = t;

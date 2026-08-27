@@ -17,12 +17,39 @@ export class ProductRepository {
     return this.repo.save(product);
   }
 
-  findAll(tenantId: string): Promise<Product[]> {
-    return this.repo.find({
-      where: { tenantId },
-      relations: { category: true },
-      order: { name: 'ASC' },
-    });
+  findAll(
+    tenantId: string,
+    filters: {
+      search?: string;
+      categoryId?: string;
+      isActive?: boolean;
+      stock?: 'low' | 'ok';
+    } = {},
+  ): Promise<Product[]> {
+    const qb = this.repo
+      .createQueryBuilder('product')
+      .leftJoinAndSelect('product.category', 'category')
+      .where('product.tenantId = :tenantId', { tenantId })
+      .orderBy('product.name', 'ASC');
+
+    if (filters.search) {
+      qb.andWhere('(LOWER(product.name) LIKE :search OR LOWER(product.code) LIKE :search)', {
+        search: `%${filters.search.toLowerCase()}%`,
+      });
+    }
+    if (filters.categoryId) {
+      qb.andWhere('product.categoryId = :categoryId', { categoryId: filters.categoryId });
+    }
+    if (filters.isActive !== undefined) {
+      qb.andWhere('product.isActive = :isActive', { isActive: filters.isActive });
+    }
+    if (filters.stock === 'low') {
+      qb.andWhere('product.stock <= product.minStock').andWhere('product.minStock > 0');
+    } else if (filters.stock === 'ok') {
+      qb.andWhere('product.stock > product.minStock OR product.minStock = 0');
+    }
+
+    return qb.getMany();
   }
 
   findOne(id: string, tenantId: string): Promise<Product | null> {

@@ -1,10 +1,24 @@
-import { Body, Controller, Get, Inject, Param, Post, Query, Res, forwardRef } from '@nestjs/common';
+import {
+  BadRequestException,
+  Body,
+  Controller,
+  Get,
+  Inject,
+  Param,
+  Post,
+  Query,
+  Res,
+  UnauthorizedException,
+  forwardRef,
+} from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
 import type { Response } from 'express';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
+import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { Public } from '../common/decorators/public.decorator';
 import { Role } from '../common/enums/role.enum';
+import type { RequestUser } from '../common/types/request-user.type';
 import { TenantMembershipsService } from '../tenant-memberships/tenant-memberships.service';
 import { TenantsService } from '../tenants/tenants.service';
 import { UsersService } from '../users/users.service';
@@ -154,9 +168,6 @@ export class InvitationsController {
 
       await this.invitationsService.markAccepted(invitation.id);
 
-      // Look up tenant to know its onboarding status
-      const tenant = await this.tenantsService.findById(invitation.tenantId);
-
       // Sign JWT
       const jwtToken = this.jwtService.sign({
         sub: user.id,
@@ -178,15 +189,67 @@ export class InvitationsController {
       // Set JWT (httpOnly)
       res.cookie('inv360_token', jwtToken, { ...cookieBase, httpOnly: true });
       // Set role & onboarding cookies (readable by Next.js proxy)
+      // Invited users always go to dashboard — onboarding is the owner's responsibility
       res.cookie('inv360_role', user.globalRole, cookieBase);
-      res.cookie('inv360_onboarded', String(tenant?.isOnboarded ?? false), cookieBase);
+      res.cookie('inv360_onboarded', 'true', cookieBase);
 
-      const destination = tenant?.isOnboarded
-        ? `${frontendUrl}/dashboard`
-        : `${frontendUrl}/onboarding`;
-      res.redirect(destination);
+      res.redirect(`${frontendUrl}/dashboard`);
     } catch {
       return errorRedirect('google_failed');
     }
+  }
+
+  // ── Mobile: pending invitations for the current user ───────────────────────
+
+  @Get('mine')
+  async mine(@CurrentUser() user: RequestUser) {
+    const invitations = await this.invitationsService.findAllPendingByEmail(user.email);
+    const now = new Date();
+    const valid = invitations.filter((inv) => inv.expiresAt > now);
+
+    const results = await Promise.all(
+      valid.map(async (inv) => {
+        const tenant = await this.tenantsService.findById(inv.tenantId);
+        return {
+          id: inv.id,
+          tenantId: inv.tenantId,
+          tenantName: tenant?.name ?? '',
+          role: inv.role,
+          expiresAt: inv.expiresAt,
+        };
+      }),
+    );
+    return results;
+  }
+
+  @Post(':id/accept-mine')
+  async acceptMine(@Param('id') id: string, @CurrentUser() user: RequestUser) {
+    const invitation = await this.invitationsService.findById(id);
+    if (!invitation) throw new BadRequestException('Invitación no encontrada');
+    if (invitation.acceptedAt) throw new BadRequestException('Esta invitación ya fue utilizada');
+    if (new Date() > invitation.expiresAt) throw new BadRequestException('La invitación expiró');
+    if (invitation.email.toLowerCase() !== user.email.toLowerCase()) {
+      throw new UnauthorizedException('Esta invitación no te pertenece');
+    }
+
+    const existing = await this.membershipsService.findMembership(user.id, invitation.tenantId);
+    if (!existing) {
+      await this.membershipsService.create({
+        userId: user.id,
+        tenantId: invitation.tenantId,
+        role: invitation.role,
+      });
+    }
+    await this.invitationsService.markAccepted(invitation.id);
+
+    const access_token = this.jwtService.sign({
+      sub: user.id,
+      email: user.email,
+      globalRole: user.globalRole,
+      activeTenantId: invitation.tenantId,
+      tenantRole: invitation.role,
+    });
+
+    return { ok: true, access_token };
   }
 }

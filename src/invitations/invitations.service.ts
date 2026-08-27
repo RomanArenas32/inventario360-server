@@ -29,6 +29,10 @@ export class InvitationsService {
     });
   }
 
+  findById(id: string) {
+    return this.invitationRepository.findById(id);
+  }
+
   async validate(token: string) {
     const invitation = await this.invitationRepository.findByToken(token);
     if (!invitation) throw new BadRequestException('Invitación inválida');
@@ -54,6 +58,10 @@ export class InvitationsService {
     if (!invitation) throw new BadRequestException('Invitación no encontrada');
     if (invitation.acceptedAt) throw new BadRequestException('Esta invitación ya fue aceptada');
     await this.invitationRepository.deleteById(id);
+  }
+
+  findAllPendingByEmail(email: string) {
+    return this.invitationRepository.findAllPendingByEmail(email);
   }
 
   findPendingByTenantIds(tenantIds: string[]) {

@@ -1,0 +1,23 @@
+import { IsBoolean, IsOptional, IsString } from 'class-validator';
+
+export class UpsertNotificationSettingsDto {
+  @IsOptional()
+  @IsString()
+  whatsappPhone?: string | null;
+
+  @IsOptional()
+  @IsBoolean()
+  whatsappOptIn?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  alertLowStock?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  alertNewSale?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  alertTurnAssigned?: boolean;
+}

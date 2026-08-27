@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, Put } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post, Query } from '@nestjs/common';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { RoleG } from '../common/decorators/role-guard.decorator';
 import { TenantRole } from '../common/enums/tenant-role.enum';
@@ -15,7 +15,7 @@ export class TenantsController {
   @Patch('onboarding')
   @RoleG(TenantRole.Owner)
   completeOnboarding(@CurrentUser() user: RequestUser, @Body() dto: OnboardingDto) {
-    return this.tenantsService.completeOnboarding(user.activeTenantId!, dto.businessType, {
+    return this.tenantsService.completeOnboarding(user.activeTenantId!, dto.businessType as never, {
       businessName: dto.businessName,
       phone: dto.phone,
     });
@@ -23,8 +23,12 @@ export class TenantsController {
 
   @Get('members')
   @RoleG(TenantRole.Owner)
-  getMembers(@CurrentUser() user: RequestUser) {
-    return this.tenantsService.getMembers(user.activeTenantId!);
+  getMembers(
+    @CurrentUser() user: RequestUser,
+    @Query('search') search?: string,
+    @Query('role') role?: TenantRole,
+  ) {
+    return this.tenantsService.getMembers(user.activeTenantId!, { search, role });
   }
 
   @Get('invitations/pending')
@@ -69,9 +73,23 @@ export class TenantsController {
     return this.tenantsService.getSettings(user.activeTenantId!);
   }
 
-  @Put('settings')
+  @Patch('settings')
   @RoleG(TenantRole.Owner)
-  updateSettings(@CurrentUser() user: RequestUser, @Body() body: { staffModules: string[] }) {
-    return this.tenantsService.updateSettings(user.activeTenantId!, body.staffModules);
+  async updateSettings(
+    @CurrentUser() user: RequestUser,
+    @Body() body: { businessType?: string; name?: string },
+  ) {
+    const tasks: Promise<unknown>[] = [];
+    if (body.businessType)
+      tasks.push(this.tenantsService.updateBusinessType(user.activeTenantId!, body.businessType));
+    if (body.name) tasks.push(this.tenantsService.updateName(user.activeTenantId!, body.name));
+    await Promise.all(tasks);
+    return { ok: true };
+  }
+
+  @Patch('staff-modules')
+  @RoleG(TenantRole.Owner)
+  updateStaffModules(@CurrentUser() user: RequestUser, @Body() body: { modules: string[] | null }) {
+    return this.tenantsService.updateStaffModules(user.activeTenantId!, body.modules);
   }
 }

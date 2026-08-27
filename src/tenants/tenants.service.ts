@@ -28,6 +28,15 @@ export class TenantsService {
     return this.tenantRepository.create(...args);
   }
 
+  async selfRegister(userId: string, name: string) {
+    const trialEndsAt = new Date();
+    trialEndsAt.setDate(trialEndsAt.getDate() + 30);
+
+    const tenant = await this.tenantRepository.create(name, undefined, { trialEndsAt });
+    await this.membershipsService.create({ userId, tenantId: tenant.id, role: TenantRole.Owner });
+    return tenant;
+  }
+
   completeOnboarding(...args: Parameters<TenantRepository['completeOnboarding']>) {
     return this.tenantRepository.completeOnboarding(...args);
   }
@@ -50,8 +59,8 @@ export class TenantsService {
 
   // ── Member management ─────────────────────────────────────────────────────
 
-  async getMembers(tenantId: string) {
-    const memberships = await this.membershipsService.findByTenantId(tenantId);
+  async getMembers(tenantId: string, filters: { search?: string; role?: TenantRole } = {}) {
+    const memberships = await this.membershipsService.findByTenantId(tenantId, filters);
     return memberships.map(({ user, role, isActive, createdAt, id, userId }) => ({
       membershipId: id,
       userId,
@@ -123,11 +132,25 @@ export class TenantsService {
 
   async getSettings(tenantId: string) {
     const tenant = await this.tenantRepository.findByIdOrFail(tenantId);
-    return { staffModules: tenant.staffModules };
+    return {
+      name: tenant.name,
+      businessType: tenant.businessType,
+      staffModules: tenant.staffModules,
+    };
   }
 
-  async updateSettings(tenantId: string, staffModules: string[]) {
-    await this.tenantRepository.update(tenantId, { staffModules });
-    return { staffModules };
+  async updateBusinessType(tenantId: string, businessType: string) {
+    await this.tenantRepository.update(tenantId, { businessType: businessType as never });
+    return { ok: true };
+  }
+
+  async updateName(tenantId: string, name: string) {
+    await this.tenantRepository.update(tenantId, { name: name.trim() });
+    return { ok: true };
+  }
+
+  async updateStaffModules(tenantId: string, modules: string[] | null) {
+    await this.tenantRepository.update(tenantId, { staffModules: modules });
+    return { ok: true };
   }
 }

@@ -46,6 +46,13 @@ export class InvitationRepository {
     });
   }
 
+  findAllPendingByEmail(email: string): Promise<TenantInvitation[]> {
+    return this.repo.find({
+      where: { email, acceptedAt: IsNull() },
+      order: { createdAt: 'DESC' },
+    });
+  }
+
   async markAccepted(id: string): Promise<void> {
     await this.repo.update(id, { acceptedAt: new Date() });
   }

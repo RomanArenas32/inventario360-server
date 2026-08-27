@@ -24,8 +24,25 @@ export class TenantMembershipRepository {
     return this.repo.findOne({ where: { userId, tenantId } });
   }
 
-  findByTenantId(tenantId: string): Promise<TenantMembership[]> {
-    return this.repo.find({ where: { tenantId }, relations: { user: true } });
+  findByTenantId(
+    tenantId: string,
+    filters: { search?: string; role?: TenantRole } = {},
+  ): Promise<TenantMembership[]> {
+    const qb = this.repo
+      .createQueryBuilder('membership')
+      .leftJoinAndSelect('membership.user', 'user')
+      .where('membership.tenantId = :tenantId', { tenantId });
+
+    if (filters.search) {
+      qb.andWhere('(LOWER(user.name) LIKE :search OR LOWER(user.email) LIKE :search)', {
+        search: `%${filters.search.toLowerCase()}%`,
+      });
+    }
+    if (filters.role) {
+      qb.andWhere('membership.role = :role', { role: filters.role });
+    }
+
+    return qb.getMany();
   }
 
   async deleteByTenantId(tenantId: string): Promise<void> {

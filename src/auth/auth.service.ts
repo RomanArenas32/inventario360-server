@@ -1,9 +1,10 @@
-import { ForbiddenException, Injectable, UnauthorizedException } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { TenantMembershipsService } from '../tenant-memberships/tenant-memberships.service';
 import { UsersService } from '../users/users.service';
 import { LoginDto } from './dto/login.dto';
+import { SignupDto } from './dto/signup.dto';
 
 @Injectable()
 export class AuthService {
@@ -12,6 +13,25 @@ export class AuthService {
     private readonly tenantMembershipsService: TenantMembershipsService,
     private readonly jwtService: JwtService,
   ) {}
+
+  async signup(dto: SignupDto) {
+    const existing = await this.usersService.findByEmail(dto.email);
+    if (existing) throw new BadRequestException('Ya existe una cuenta con ese email');
+    const hashed = await bcrypt.hash(dto.password, 10);
+    const user = await this.usersService.create({
+      email: dto.email,
+      name: dto.name,
+      password: hashed,
+    });
+    const token = this.jwtService.sign({
+      sub: user.id,
+      email: user.email,
+      globalRole: user.globalRole,
+      activeTenantId: null,
+      tenantRole: null,
+    });
+    return { access_token: token, memberships: [] };
+  }
 
   async login(dto: LoginDto) {
     const user = await this.usersService.findByEmail(dto.email);
@@ -42,6 +62,21 @@ export class AuthService {
     return { access_token: token, memberships };
   }
 
+  async findOrCreateByGoogle(profile: { email: string; name?: string; picture?: string }) {
+    let user = await this.usersService.findByEmail(profile.email);
+    if (!user) {
+      user = await this.usersService.create({
+        email: profile.email,
+        name: profile.name ?? profile.email.split('@')[0] ?? 'Usuario',
+        avatarUrl: profile.picture ?? null,
+      });
+    } else {
+      if (!user.isActive) throw new UnauthorizedException('Usuario inactivo');
+      if (profile.picture) void this.usersService.upsertAvatar(user.id, profile.picture);
+    }
+    return user;
+  }
+
   async loginByEmail(email: string) {
     const user = await this.usersService.findByEmail(email);
     if (!user) throw new UnauthorizedException('No existe una cuenta con este email');
@@ -65,6 +100,16 @@ export class AuthService {
     });
 
     return { access_token: token, memberships, activeTenantId, userId: user.id };
+  }
+
+  signToken(payload: {
+    sub: string;
+    email: string;
+    globalRole?: string;
+    activeTenantId?: string | null;
+    tenantRole?: string | null;
+  }): string {
+    return this.jwtService.sign(payload);
   }
 
   async saveAvatar(userId: string, avatarUrl: string): Promise<void> {
