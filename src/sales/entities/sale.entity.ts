@@ -45,6 +45,9 @@ export class Sale {
   @Column({ type: 'decimal', precision: 10, scale: 2, default: 0 })
   discount: number;
 
+  @Column({ type: 'decimal', precision: 10, scale: 2, default: 0 })
+  surcharge: number;
+
   @Column({ type: 'timestamp', nullable: true })
   refundedAt: Date | null;
 

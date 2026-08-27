@@ -103,17 +103,20 @@ export class SalesService {
         }
       }
 
-      // Apply discount
+      // Apply discount and surcharge
       const discountPct = dto.discountPct ?? 0;
+      const surchargePct = dto.surchargePct ?? 0;
       const discountAmount = discountPct > 0 ? Math.round(total * discountPct) / 100 : 0;
-      const finalTotal = Math.max(0, total - discountAmount);
-      const finalProfit = discountPct > 0 ? profit * (1 - discountPct / 100) : profit;
+      const surchargeAmount = surchargePct > 0 ? Math.round(total * surchargePct) / 100 : 0;
+      const finalTotal = Math.max(0, total - discountAmount + surchargeAmount);
+      const finalProfit = profit * (1 - discountPct / 100) * (1 + surchargePct / 100);
 
       // Create sale
       const sale = saleRepo.create({
         total: finalTotal,
         profit: finalProfit,
         discount: discountAmount,
+        surcharge: surchargeAmount,
         paymentMethod: dto.paymentMethod,
         notes: dto.notes ?? undefined,
         itemCount: dto.items.length,

@@ -59,4 +59,10 @@ export class CreateSaleDto {
   @Min(0)
   @Max(100)
   discountPct?: number;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  @Max(100)
+  surchargePct?: number;
 }
