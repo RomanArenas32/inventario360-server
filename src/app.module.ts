@@ -18,6 +18,7 @@ import { MailModule } from './mail/mail.module';
 import { PlatformAdminModule } from './platform-admin/platform-admin.module';
 import { ProductsModule } from './products/products.module';
 import { SalesModule } from './sales/sales.module';
+import { ServicesModule } from './services/services.module';
 import { StockMovementsModule } from './stock-movements/stock-movements.module';
 import { TenantMembershipsModule } from './tenant-memberships/tenant-memberships.module';
 import { TenantsModule } from './tenants/tenants.module';
@@ -57,6 +58,7 @@ import { UsersModule } from './users/users.module';
     PlatformAdminModule,
     ProductsModule,
     SalesModule,
+    ServicesModule,
     StockMovementsModule,
     TenantMembershipsModule,
     TurnsModule,

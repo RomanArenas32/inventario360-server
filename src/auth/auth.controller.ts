@@ -145,7 +145,11 @@ export class AuthController {
       const profileRes = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
         headers: { Authorization: `Bearer ${access_token}` },
       });
-      const { email, picture, name } = (await profileRes.json()) as { email: string; picture?: string; name?: string };
+      const { email, picture, name } = (await profileRes.json()) as {
+        email: string;
+        picture?: string;
+        name?: string;
+      };
       if (!email) return errorRedirect('google_failed');
 
       // Find or create user (open registration)

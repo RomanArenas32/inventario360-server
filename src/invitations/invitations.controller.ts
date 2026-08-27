@@ -1,4 +1,16 @@
-import { BadRequestException, Body, Controller, Get, Inject, Param, Post, Query, Res, UnauthorizedException, forwardRef } from '@nestjs/common';
+import {
+  BadRequestException,
+  Body,
+  Controller,
+  Get,
+  Inject,
+  Param,
+  Post,
+  Query,
+  Res,
+  UnauthorizedException,
+  forwardRef,
+} from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
 import type { Response } from 'express';
 import { JwtService } from '@nestjs/jwt';
