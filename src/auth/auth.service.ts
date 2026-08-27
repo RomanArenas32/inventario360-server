@@ -1,9 +1,10 @@
-import { ForbiddenException, Injectable, UnauthorizedException } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { TenantMembershipsService } from '../tenant-memberships/tenant-memberships.service';
 import { UsersService } from '../users/users.service';
 import { LoginDto } from './dto/login.dto';
+import { SignupDto } from './dto/signup.dto';
 
 @Injectable()
 export class AuthService {
@@ -12,6 +13,25 @@ export class AuthService {
     private readonly tenantMembershipsService: TenantMembershipsService,
     private readonly jwtService: JwtService,
   ) {}
+
+  async signup(dto: SignupDto) {
+    const existing = await this.usersService.findByEmail(dto.email);
+    if (existing) throw new BadRequestException('Ya existe una cuenta con ese email');
+    const hashed = await bcrypt.hash(dto.password, 10);
+    const user = await this.usersService.create({
+      email: dto.email,
+      name: dto.name,
+      password: hashed,
+    });
+    const token = this.jwtService.sign({
+      sub: user.id,
+      email: user.email,
+      globalRole: user.globalRole,
+      activeTenantId: null,
+      tenantRole: null,
+    });
+    return { access_token: token, memberships: [] };
+  }
 
   async login(dto: LoginDto) {
     const user = await this.usersService.findByEmail(dto.email);

@@ -9,6 +9,7 @@ import { TenantsService } from '../tenants/tenants.service';
 import type { RequestUser } from '../common/types/request-user.type';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
+import { SignupDto } from './dto/signup.dto';
 
 const COOKIE_NAME = 'inv360_token';
 const COOKIE_MAX_AGE = 7 * 24 * 60 * 60 * 1000;
@@ -21,6 +22,13 @@ export class AuthController {
     private readonly tenantMembershipsService: TenantMembershipsService,
     private readonly config: ConfigService,
   ) {}
+
+  @Public()
+  @Throttle({ global: { ttl: 60_000, limit: 5 } })
+  @Post('signup')
+  async signup(@Body() dto: SignupDto) {
+    return this.authService.signup(dto);
+  }
 
   @Public()
   @Throttle({ global: { ttl: 60_000, limit: 5 } })
