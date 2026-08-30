@@ -179,20 +179,30 @@ export class AuthController {
         tenantRole,
       });
 
+      // Si hay múltiples tenants, auto-seleccionar el primero
+      let finalToken = jwtToken;
+      if (memberships.length > 1) {
+        const first = memberships[0];
+        finalToken = this.authService.signToken({
+          sub: user.id,
+          email: user.email,
+          globalRole: user.globalRole,
+          activeTenantId: first.tenantId,
+          tenantRole: first.role,
+        });
+        activeTenantId = first.tenantId;
+      }
+
       // Redirect to frontend API route which sets cookies in the correct domain
       const callbackBase = `${frontendUrl}/api/auth/google/callback`;
       const params = (destination: string, onboarded: boolean) =>
-        `?token=${jwtToken}&role=${user.globalRole}&onboarded=${onboarded}&destination=${encodeURIComponent(destination)}`;
+        `?token=${finalToken}&role=${user.globalRole}&onboarded=${onboarded}&destination=${encodeURIComponent(destination)}`;
 
       if (memberships.length === 0) {
         return res.redirect(`${callbackBase}${params('/register', false)}`);
       }
 
-      if (memberships.length > 1 || !activeTenantId) {
-        return res.redirect(`${callbackBase}${params('/select-tenant', false)}`);
-      }
-
-      const tenant = await this.tenantsService.findById(activeTenantId);
+      const tenant = await this.tenantsService.findById(activeTenantId!);
       const isOnboarded = tenant?.isOnboarded ?? false;
       const destination = isOnboarded ? '/dashboard' : '/onboarding';
       return res.redirect(`${callbackBase}${params(destination, isOnboarded)}`);
