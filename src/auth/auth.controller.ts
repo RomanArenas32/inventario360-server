@@ -179,34 +179,23 @@ export class AuthController {
         tenantRole,
       });
 
-      const isProd = process.env.NODE_ENV === 'production';
-      const clientCookieBase = {
-        httpOnly: false as const,
-        secure: isProd,
-        sameSite: 'lax' as const,
-        maxAge: COOKIE_MAX_AGE,
-        path: '/',
-      };
-
-      res.cookie(COOKIE_NAME, jwtToken, { ...clientCookieBase, httpOnly: true });
-      res.cookie('inv360_role', user.globalRole, clientCookieBase);
+      // Redirect to frontend API route which sets cookies in the correct domain
+      const callbackBase = `${frontendUrl}/api/auth/google/callback`;
+      const params = (destination: string, onboarded: boolean) =>
+        `?token=${jwtToken}&role=${user.globalRole}&onboarded=${onboarded}&destination=${encodeURIComponent(destination)}`;
 
       if (memberships.length === 0) {
-        // New user with no tenant — redirect to open registration
-        return res.redirect(`${frontendUrl}/register`);
+        return res.redirect(`${callbackBase}${params('/register', false)}`);
       }
 
       if (memberships.length > 1 || !activeTenantId) {
-        res.cookie('inv360_onboarded', 'false', clientCookieBase);
-        return res.redirect(`${frontendUrl}/select-tenant`);
+        return res.redirect(`${callbackBase}${params('/select-tenant', false)}`);
       }
 
       const tenant = await this.tenantsService.findById(activeTenantId);
-      res.cookie('inv360_onboarded', String(tenant?.isOnboarded ?? false), clientCookieBase);
-      const destination = tenant?.isOnboarded
-        ? `${frontendUrl}/dashboard`
-        : `${frontendUrl}/onboarding`;
-      return res.redirect(destination);
+      const isOnboarded = tenant?.isOnboarded ?? false;
+      const destination = isOnboarded ? '/dashboard' : '/onboarding';
+      return res.redirect(`${callbackBase}${params(destination, isOnboarded)}`);
     } catch (err) {
       if (err instanceof Error && err.message.includes('cuenta')) {
         return errorRedirect('no_account');

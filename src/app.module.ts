@@ -42,9 +42,7 @@ import { UsersModule } from './users/users.module';
         database: config.get<string>('DB_NAME'),
         entities: [__dirname + '/**/*.entity{.ts,.js}'],
         synchronize: true,
-        ...(config.get<string>('DB_SSL') === 'true'
-          ? { ssl: { rejectUnauthorized: false } }
-          : {}),
+        ...(config.get<string>('DB_SSL') === 'true' ? { ssl: { rejectUnauthorized: false } } : {}),
       }),
       inject: [ConfigService],
     }),
