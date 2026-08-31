@@ -30,17 +30,13 @@ async function createAdmin() {
   const exists = await repo.findOne({ where: { email } });
   if (exists) {
     if (!shouldResetPassword) {
-      console.log(`El admin de plataforma ya existe: ${email}`);
       await dataSource.destroy();
       return;
     }
 
     exists.password = await bcrypt.hash(password, 10);
     exists.isActive = true;
-
     await repo.save(exists);
-
-    console.log(`Contraseña restablecida para: ${email}`);
     await dataSource.destroy();
     return;
   }
@@ -48,12 +44,6 @@ async function createAdmin() {
   const hashedPassword = await bcrypt.hash(password, 10);
   const admin = repo.create({ name, email, password: hashedPassword });
   await repo.save(admin);
-
-  console.log('✓ Admin de plataforma creado correctamente');
-  console.log(`  Email:    ${email}`);
-  console.log(`  Password: ${password}`);
-  console.log('  Cambiá la contraseña en producción.');
-
   await dataSource.destroy();
 }
 

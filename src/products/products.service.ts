@@ -107,6 +107,10 @@ export class ProductsService {
     }
   }
 
+  findByCode(code: string, tenantId: string) {
+    return this.productRepository.findByCode(code, tenantId);
+  }
+
   findLowStock(tenantId: string) {
     return this.productRepository.findLowStock(tenantId);
   }

@@ -28,11 +28,11 @@ export class TenantsService {
     return this.tenantRepository.create(...args);
   }
 
-  async selfRegister(userId: string, name: string) {
+  async selfRegister(userId: string, name: string, phone?: string) {
     const trialEndsAt = new Date();
     trialEndsAt.setDate(trialEndsAt.getDate() + 30);
 
-    const tenant = await this.tenantRepository.create(name, undefined, { trialEndsAt });
+    const tenant = await this.tenantRepository.create(name, undefined, { trialEndsAt, phone });
     await this.membershipsService.create({ userId, tenantId: tenant.id, role: TenantRole.Owner });
     return tenant;
   }

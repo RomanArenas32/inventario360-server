@@ -9,6 +9,7 @@ import { TenantsService } from '../tenants/tenants.service';
 import type { RequestUser } from '../common/types/request-user.type';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
+import { RegisterTenantDto } from './dto/register-tenant.dto';
 import { SignupDto } from './dto/signup.dto';
 
 const COOKIE_NAME = 'inv360_token';
@@ -164,48 +165,42 @@ export class AuthController {
       const user = await this.authService.findOrCreateByGoogle({ email, name, picture });
       const memberships = await this.tenantMembershipsService.findByUserId(user.id);
 
-      let activeTenantId: string | null = null;
-      let tenantRole: string | null = null;
-      if (memberships.length === 1) {
-        activeTenantId = memberships[0].tenantId;
-        tenantRole = memberships[0].role;
-      }
+      // Redirect to frontend API route which sets cookies in the correct domain
+      const callbackBase = `${frontendUrl}/api/auth/google/callback`;
+      const params = (token: string, destination: string, onboarded: boolean) =>
+        `?token=${token}&role=${user.globalRole}&onboarded=${onboarded}&destination=${encodeURIComponent(destination)}`;
 
-      const jwtToken = this.authService.signToken({
-        sub: user.id,
-        email: user.email,
-        globalRole: user.globalRole,
-        activeTenantId,
-        tenantRole,
-      });
-
-      // Si hay múltiples tenants, auto-seleccionar el primero
-      let finalToken = jwtToken;
-      if (memberships.length > 1) {
-        const first = memberships[0];
-        finalToken = this.authService.signToken({
+      if (memberships.length === 0) {
+        const token = this.authService.signToken({
           sub: user.id,
           email: user.email,
           globalRole: user.globalRole,
-          activeTenantId: first.tenantId,
-          tenantRole: first.role,
+          activeTenantId: null,
+          tenantRole: null,
         });
-        activeTenantId = first.tenantId;
+        return res.redirect(`${callbackBase}${params(token, '/register', false)}`);
       }
 
-      // Redirect to frontend API route which sets cookies in the correct domain
-      const callbackBase = `${frontendUrl}/api/auth/google/callback`;
-      const params = (destination: string, onboarded: boolean) =>
-        `?token=${finalToken}&role=${user.globalRole}&onboarded=${onboarded}&destination=${encodeURIComponent(destination)}`;
+      // Preferir un tenant onboarded; si ninguno lo está, usar el primero
+      const tenants = await Promise.all(
+        memberships.map((m) => this.tenantsService.findById(m.tenantId)),
+      );
+      const onboardedIdx = tenants.findIndex((t) => t?.isOnboarded);
+      const idx = onboardedIdx >= 0 ? onboardedIdx : 0;
+      const chosen = memberships[idx];
+      const chosenTenant = tenants[idx];
 
-      if (memberships.length === 0) {
-        return res.redirect(`${callbackBase}${params('/register', false)}`);
-      }
+      const finalToken = this.authService.signToken({
+        sub: user.id,
+        email: user.email,
+        globalRole: user.globalRole,
+        activeTenantId: chosen.tenantId,
+        tenantRole: chosen.role,
+      });
 
-      const tenant = await this.tenantsService.findById(activeTenantId!);
-      const isOnboarded = tenant?.isOnboarded ?? false;
+      const isOnboarded = chosenTenant?.isOnboarded ?? false;
       const destination = isOnboarded ? '/dashboard' : '/onboarding';
-      return res.redirect(`${callbackBase}${params(destination, isOnboarded)}`);
+      return res.redirect(`${callbackBase}${params(finalToken, destination, isOnboarded)}`);
     } catch (err) {
       if (err instanceof Error && err.message.includes('cuenta')) {
         return errorRedirect('no_account');
@@ -274,14 +269,10 @@ export class AuthController {
   @Post('register-tenant')
   async registerTenant(
     @CurrentUser() user: RequestUser,
-    @Body() body: { name: string },
+    @Body() body: RegisterTenantDto,
     @Res({ passthrough: true }) res: Response,
   ) {
-    if (!body.name?.trim()) {
-      throw new UnauthorizedException('El nombre del negocio es requerido');
-    }
-
-    const tenant = await this.tenantsService.selfRegister(user.id, body.name.trim());
+    const tenant = await this.tenantsService.selfRegister(user.id, body.name.trim(), body.phone?.trim() || undefined);
 
     const access_token = this.authService.signToken({
       sub: user.id,
