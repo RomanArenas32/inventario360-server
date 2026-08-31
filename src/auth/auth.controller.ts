@@ -9,6 +9,7 @@ import { TenantsService } from '../tenants/tenants.service';
 import type { RequestUser } from '../common/types/request-user.type';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
+import { RegisterTenantDto } from './dto/register-tenant.dto';
 import { SignupDto } from './dto/signup.dto';
 
 const COOKIE_NAME = 'inv360_token';
@@ -268,14 +269,10 @@ export class AuthController {
   @Post('register-tenant')
   async registerTenant(
     @CurrentUser() user: RequestUser,
-    @Body() body: { name: string },
+    @Body() body: RegisterTenantDto,
     @Res({ passthrough: true }) res: Response,
   ) {
-    if (!body.name?.trim()) {
-      throw new UnauthorizedException('El nombre del negocio es requerido');
-    }
-
-    const tenant = await this.tenantsService.selfRegister(user.id, body.name.trim());
+    const tenant = await this.tenantsService.selfRegister(user.id, body.name.trim(), body.phone?.trim() || undefined);
 
     const access_token = this.authService.signToken({
       sub: user.id,

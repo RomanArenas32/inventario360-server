@@ -33,6 +33,11 @@ export class ProductsController {
     });
   }
 
+  @Get('by-code')
+  findByCode(@Query('code') code: string, @CurrentUser() user: RequestUser) {
+    return this.productsService.findByCode(code, user.activeTenantId!);
+  }
+
   @Get('low-stock')
   findLowStock(@CurrentUser() user: RequestUser) {
     return this.productsService.findLowStock(user.activeTenantId!);
