@@ -80,8 +80,8 @@ export class SaleRepository {
   ) {}
 
   async findAll(tenantId: string, query: SaleQueryDto): Promise<PaginatedResult<Sale>> {
-    const limit = query.limit ?? 20;
-    const offset = query.offset ?? 0;
+    const limit = Number(query.limit) || 20;
+    const offset = Number(query.offset) || 0;
     const period = query.period ?? 'today';
     const { start, end } = getPeriodRange(period);
 
