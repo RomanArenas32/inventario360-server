@@ -6,6 +6,7 @@ import { QueryFailedError } from 'typeorm';
 import { CategoriesService } from '../categories/categories.service';
 import type { CreateProductDto } from './dto/create-product.dto';
 import type { UpdateProductDto } from './dto/update-product.dto';
+import type { BulkImportDto } from './dto/bulk-import.dto';
 import { ProductRepository } from './repositories/product.repository';
 
 @Injectable()
@@ -113,5 +114,68 @@ export class ProductsService {
 
   findLowStock(tenantId: string) {
     return this.productRepository.findLowStock(tenantId);
+  }
+
+  async bulkImport(
+    dto: BulkImportDto,
+    tenantId: string,
+  ): Promise<{
+    created: number;
+    updated: number;
+    errors: { code: string; name: string; error: string }[];
+  }> {
+    let created = 0;
+    let updated = 0;
+    const errors: { code: string; name: string; error: string }[] = [];
+
+    // Resolve categories by name once
+    const allCategories = await this.categoriesService.findAll(tenantId);
+    const categoryByName = new Map(allCategories.map((c) => [c.name.toLowerCase().trim(), c.id]));
+
+    for (const item of dto.products) {
+      try {
+        const categoryId = item.categoryName
+          ? (categoryByName.get(item.categoryName.toLowerCase().trim()) ?? undefined)
+          : undefined;
+
+        const existing = await this.productRepository.findByCode(item.code, tenantId);
+
+        if (existing) {
+          await this.productRepository.update(existing.id, {
+            name: item.name,
+            description: item.description,
+            costPrice: item.costPrice,
+            salePrice: item.salePrice,
+            minStock: item.minStock,
+            categoryId: categoryId ?? existing.category?.id ?? undefined,
+          });
+          updated++;
+        } else {
+          await this.productRepository.create(
+            {
+              name: item.name,
+              code: item.code,
+              description: item.description,
+              costPrice: item.costPrice,
+              salePrice: item.salePrice,
+              stock: item.stock ?? 0,
+              minStock: item.minStock ?? 0,
+              categoryId,
+              isActive: true,
+            },
+            tenantId,
+          );
+          created++;
+        }
+      } catch (err: unknown) {
+        errors.push({
+          code: item.code,
+          name: item.name,
+          error: err instanceof Error ? err.message : 'Error desconocido',
+        });
+      }
+    }
+
+    return { created, updated, errors };
   }
 }

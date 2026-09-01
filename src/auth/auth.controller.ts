@@ -272,7 +272,11 @@ export class AuthController {
     @Body() body: RegisterTenantDto,
     @Res({ passthrough: true }) res: Response,
   ) {
-    const tenant = await this.tenantsService.selfRegister(user.id, body.name.trim(), body.phone?.trim() || undefined);
+    const tenant = await this.tenantsService.selfRegister(
+      user.id,
+      body.name.trim(),
+      body.phone?.trim() || undefined,
+    );
 
     const access_token = this.authService.signToken({
       sub: user.id,
