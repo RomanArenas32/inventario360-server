@@ -55,7 +55,7 @@ export class AdminAuthController {
       path: '/',
     });
 
-    return { ok: true };
+    return { ok: true, access_token: token };
   }
 
   @Public()

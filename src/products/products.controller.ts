@@ -5,6 +5,7 @@ import { TenantRole } from '../common/enums/tenant-role.enum';
 import type { RequestUser } from '../common/types/request-user.type';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
+import { BulkImportDto } from './dto/bulk-import.dto';
 import { ProductsService } from './products.service';
 
 @Controller('products')
@@ -15,6 +16,12 @@ export class ProductsController {
   @Post()
   create(@Body() dto: CreateProductDto, @CurrentUser() user: RequestUser) {
     return this.productsService.create(dto, user.activeTenantId!);
+  }
+
+  @Post('bulk-import')
+  @RoleG(TenantRole.Owner)
+  bulkImport(@Body() dto: BulkImportDto, @CurrentUser() user: RequestUser) {
+    return this.productsService.bulkImport(dto, user.activeTenantId!);
   }
 
   @Get()
