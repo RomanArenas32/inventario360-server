@@ -15,6 +15,7 @@ const dataSource = new DataSource({
   database: process.env.DB_NAME,
   entities: [PlatformAdmin],
   synchronize: true,
+  ...(process.env.DB_SSL === 'true' ? { ssl: { rejectUnauthorized: false } } : {}),
 });
 
 async function createAdmin() {
