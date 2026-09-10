@@ -77,12 +77,14 @@ export class TenantsController {
   @RoleG(TenantRole.Owner)
   async updateSettings(
     @CurrentUser() user: RequestUser,
-    @Body() body: { businessType?: string; name?: string },
+    @Body() body: { businessType?: string; name?: string; logoUrl?: string | null },
   ) {
     const tasks: Promise<unknown>[] = [];
     if (body.businessType)
       tasks.push(this.tenantsService.updateBusinessType(user.activeTenantId!, body.businessType));
     if (body.name) tasks.push(this.tenantsService.updateName(user.activeTenantId!, body.name));
+    if ('logoUrl' in body)
+      tasks.push(this.tenantsService.updateLogo(user.activeTenantId!, body.logoUrl ?? null));
     await Promise.all(tasks);
     return { ok: true };
   }
