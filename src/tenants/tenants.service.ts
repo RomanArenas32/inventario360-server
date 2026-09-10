@@ -136,6 +136,7 @@ export class TenantsService {
       name: tenant.name,
       businessType: tenant.businessType,
       staffModules: tenant.staffModules,
+      logoUrl: tenant.logoUrl ?? null,
     };
   }
 
@@ -146,6 +147,11 @@ export class TenantsService {
 
   async updateName(tenantId: string, name: string) {
     await this.tenantRepository.update(tenantId, { name: name.trim() });
+    return { ok: true };
+  }
+
+  async updateLogo(tenantId: string, logoUrl: string | null) {
+    await this.tenantRepository.update(tenantId, { logoUrl: logoUrl as never });
     return { ok: true };
   }
 

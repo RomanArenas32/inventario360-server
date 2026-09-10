@@ -23,6 +23,9 @@ export class Tenant {
   @Column({ default: false })
   isOnboarded: boolean;
 
+  @Column({ nullable: true })
+  logoUrl: string;
+
   @Column({ default: true })
   isActive: boolean;
 
